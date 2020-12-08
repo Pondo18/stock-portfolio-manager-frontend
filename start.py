@@ -10,8 +10,8 @@ import database
 def login():
     username = input("Please enter a username:\n")  # maximal 20 zeichen
     password = input("Please enter a password:\n")  # Passwort Anforderungen hinzufügen
-    hash = create_hash(username + ":" + password)
-    database.create_entry(hash, username)
+    hashcode = create_hash(username + ":" + password)
+    database.create_entry(hashcode, username)
 
 
 def create_hash(password):
