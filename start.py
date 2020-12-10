@@ -1,7 +1,8 @@
-import yfinance as yf
+#  import yfinance as yf
 import hashlib
 from pathlib import Path
 import database
+import gui
 
 
 # https://pypi.org/project/yfinance/
@@ -30,5 +31,22 @@ def start():
         database.synchro()
 
 
+def navigate(menu_items):
+    count = 1
+    for x in menu_items:
+        print(str(count)+". "+x)
+        count += 1
+    which_menu = input("Navigiere durch Eingabe der In durch das Menü!\n")
+    return which_menu
+
+def aktien_anzeigen(username):
+
+
+def menu():
+    menu_items = ["Portfolio", "Suche", "Watchlist"]
+    navigate(menu_items)
+
+
 if __name__ == "__main__":
-    start()
+
+
