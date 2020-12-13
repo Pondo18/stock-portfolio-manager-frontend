@@ -17,13 +17,17 @@ def is_hash():
     return file_path.exists()
 
 def when_app_started():
-    #if is_hash():
-     #   hashcode = get_hash()
-      #  username = database.get_username_by_hashcode(hashcode)
-       # database.synchro(username)
+    if not is_hash():
+        hashcode = get_hash()
+        username = database.get_username_by_hashcode(hashcode)
+        database.synchro(username)
     app = QApplication(sys.argv)
     register = Register(app)
+    username = register.textbox_username.text()
+    password = register.textbox_password.text()
+    print(username)
     sys.exit(app.exec_())
+    print(register.get_credentials())
 
 #def do_register():
 

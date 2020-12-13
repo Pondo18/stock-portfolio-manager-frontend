@@ -1,12 +1,15 @@
 import sys
 
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QToolTip, QLineEdit
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit
+
+import database
+
+import hashcode_functions
 
 
 class Register(QWidget):
-    def __init__(self, app):
+    def __init__(self):
         super().__init__()
 
         screen = app.primaryScreen()
@@ -39,13 +42,23 @@ class Register(QWidget):
         self.textbox_password.setEchoMode(QLineEdit.Password)
         self.textbox_password.returnPressed.connect(self.enter_press)
 
-
     def enter_press(self):
-        print("Pressed")
+        self.register(self.textbox_username.text(), self.textbox_password.text())
+        self.close()
 
-"""
+    def register(self, username, password):
+        credentials_concatenated = username + ":" + password
+        hashcode = hashcode_functions.create_hash(credentials_concatenated)
+        print(hashcode)
+        database.create_entry(hashcode, username)
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = Register()
+    if hashcode_functions.token_exists():
+        hashcode = hashcode_functions.get_hash()
+        username = database.get_username_by_hashcode(hashcode)
+        database.synchro(username)
+    else:
+        window = Register()
     sys.exit(app.exec_())
-"""
