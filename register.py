@@ -1,14 +1,12 @@
 import sys
 
-import start
-
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QToolTip, QLineEdit
 from PyQt5.QtCore import Qt
 
 
 class Register(QWidget):
-    def __init__(self):
+    def __init__(self, app):
         super().__init__()
 
         screen = app.primaryScreen()
@@ -33,23 +31,21 @@ class Register(QWidget):
         self.show()
 
     def init_me(self):
-        #self.textbox_username = QLineEdit(self)
         self.textbox_username.move(100, 200)
         self.textbox_username.resize(200, 20)
 
-        #self.textbox_password = QLineEdit(self)
         self.textbox_password.move(100, 250)
         self.textbox_password.resize(200, 20)
         self.textbox_password.setEchoMode(QLineEdit.Password)
         self.textbox_password.returnPressed.connect(self.enter_press)
 
 
-
     def enter_press(self):
-        start.login(self.textbox_username.text(), self.textbox_password.text())
+        print("Pressed")
 
-
+"""
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    w = Register()
+    window = Register()
     sys.exit(app.exec_())
+"""

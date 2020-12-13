@@ -21,13 +21,9 @@ def create_hash(password):
     token_file.close()
     return hashcode
 
-
 def start():
-    fname = Path("/Users/moritz.moser/Documents/HDBW/1.Semester/Python/Aktien/token.txt")
-    if (not fname.exists()):
-        login()
-    else:
-        database.synchro()
+    file_path = Path("/Users/moritz.moser/Documents/HDBW/1.Semester/Python/Aktien/token.txt")
+    return file_path.exists()
 
 
 def navigate(menu_items):

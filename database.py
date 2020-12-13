@@ -1,11 +1,6 @@
 import requests
 
 
-def get_hash():
-    token_file = open("token.txt", "r")
-    return token_file.read().rstrip()
-
-
 def get_username_by_hashcode(hashcode):
     payload = {'hashcode': hashcode}
     r = requests.get("http://127.0.0.1:5000/users", params=payload)
