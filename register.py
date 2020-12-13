@@ -49,14 +49,13 @@ class Register(QWidget):
     def register(self, username, password):
         credentials_concatenated = username + ":" + password
         hashcode = hashcode_functions.create_hash(credentials_concatenated)
-        print(hashcode)
         database.create_entry(hashcode, username)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    if hashcode_functions.token_exists():
-        hashcode = hashcode_functions.get_hash()
+    if hashcode_functions.return_if_hash_exists()[1]:
+        hashcode = hashcode_functions.return_if_hash_exists()
         username = database.get_username_by_hashcode(hashcode)
         database.synchro(username)
     else:

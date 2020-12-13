@@ -21,9 +21,5 @@ def get_holdings_from_user(username):
 def create_entry(hashcode, username):
     entry_data = {'hashcode': hashcode, 'username': username}
     r = requests.post("http://127.0.0.1:5000/users", json=entry_data)
-    return r.text
+    return r.json()
 
-
-print(create_entry("03a147434c16b49e16304cd4faaf832d", "MoritzXY"))
-#print(get_username_by_hashcode("03a147434c16b49e16304cd4faaf832d"))
-#print(synchro("MoritzABC"))
