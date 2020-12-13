@@ -2,16 +2,15 @@
 import hashlib
 from pathlib import Path
 import database
-import gui
+import register
 
 
 # https://pypi.org/project/yfinance/
 
 
-def login():
-    username = input("Please enter a username:\n")  # maximal 20 zeichen
-    password = input("Please enter a password:\n")  # Passwort Anforderungen hinzufügen
+def login(username, password):
     hashcode = create_hash(username + ":" + password)
+    print(hashcode)
     database.create_entry(hashcode, username)
 
 
@@ -39,7 +38,7 @@ def navigate(menu_items):
     which_menu = input("Navigiere durch Eingabe der In durch das Menü!\n")
     return which_menu
 
-def aktien_anzeigen(username):
+#def aktien_anzeigen(username):
 
 
 def menu():
@@ -48,5 +47,4 @@ def menu():
 
 
 if __name__ == "__main__":
-
-
+    login()
