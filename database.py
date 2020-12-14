@@ -7,19 +7,31 @@ def get_username_by_hashcode(hashcode):
     return r.json()[0]["username"]
 
 
-def synchro(username):
+def get_credits_by_username(username):
     r = requests.get(f"http://127.0.0.1:5000/users/{username}")
-    print(r.json())
-    return r.json()["hashcode"], r.json()["credits"]
+    return r.json()["credits"]
 
 
 def get_holdings_from_user(username):
     r = requests.get(f"http://127.0.0.1:5000/users/{username}/holdings")
     return r.json()
 
-# TODO: funktioniert noch nicht
+
 def create_entry(hashcode, username):
     entry_data = {'hashcode': hashcode, 'username': username}
     r = requests.post("http://127.0.0.1:5000/users", json=entry_data)
     return r.json()
+
+
+def username_already_exists(username):
+    r = requests.get(f"http://127.0.0.1:5000/users/{username}")
+    return r.status_code == 200
+
+
+
+print(username_already_exists("user"))
+
+
+
+
 
