@@ -3,9 +3,10 @@ import sys
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
     QHBoxLayout, QMainWindow, QGridLayout
-
 from PyQt5.QtCore import Qt, QSize
 from PyQt5 import QtWidgets, uic
+
+from pyqtgraph import PlotData
 
 import database
 
@@ -40,20 +41,20 @@ class main_gui(QWidget):
         # Scroll_Menu
 
         # Create Label_Scroll_Menu_Above
-        self.label_scroll_men_above = QLabel(self)
+        self.label_holding = QLabel(self)
+        self.label_price = QLabel(self)
+        self.label_buy_in = QLabel(self)
+        self.label_number = QLabel(self)
+        self.label_buy_date = QLabel(self)
+
+        """#Create Hbox_Scroll_Menu_Above
+        self.hbox_scroll_menu_above = QHBoxLayout(self)"""
 
         # Create Scroll_Holdings
         self.scroll_holdings = QScrollArea(self)
 
         # Create Widget_Holdings
         self.widget_holdings = QWidget()
-
-        """# Create VBox_Holdings
-        self.vbox_holdings = QVBoxLayout()
-
-        # Create HBox_Holdings_Test
-        self.holding_one = QHBoxLayout()
-        self.holding_two = QHBoxLayout()"""
 
         # Create Grid_Holdings
         self.grid_holdings = QGridLayout()
@@ -78,8 +79,25 @@ class main_gui(QWidget):
 
         # Scroll_Menu
 
-        self.label_scroll_men_above.move(100, 370)
-        self.label_scroll_men_above.setText("Text")
+        horizontal_size_scroll_menu = size.width()-500
+        horizontal_size_scroll_menu_label_distance = horizontal_size_scroll_menu/4
+        distance_yet = 110
+        n = size.width()/168
+
+        self.label_holding.setText("Holding")
+        self.label_holding.move(int(distance_yet), 370)
+        distance_yet += horizontal_size_scroll_menu_label_distance
+        self.label_price.setText("Price")
+        self.label_price.move(int(distance_yet-n), 370)
+        distance_yet += horizontal_size_scroll_menu_label_distance
+        self.label_buy_in.setText("BuyIn Price")
+        self.label_buy_in.move(int(distance_yet-n*2), 370)
+        distance_yet += horizontal_size_scroll_menu_label_distance
+        self.label_number.setText("Number of holdings")
+        self.label_number.move(int(distance_yet-n*3), 370)
+        distance_yet += horizontal_size_scroll_menu_label_distance
+        self.label_buy_date.setText("Buy Date")
+        self.label_buy_date.move(int(distance_yet-n*3), 370)
 
         # Scroll_Holdings
         self.scroll_holdings.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -88,58 +106,37 @@ class main_gui(QWidget):
         self.scroll_holdings.setWidget(self.widget_holdings)
         self.scroll_holdings.setGeometry(100, 400, size.width()-200, size.height()-500)
 
-        holdings = database.get_holdings_from_user(username)
-        amount_of_holdings = len(holdings)
+        self.show_holdings(username)
 
+        # Widget_Holdings
+        self.widget_holdings.setLayout(self.grid_holdings)
+
+    def return_holdings_data(self, holdings):
         data_from_all_holdings = []
 
         for holding in holdings:
             holding_name = holding["holding"]
             holding_price = "x"
-            #holding_buy_in = holding["buyIn"]
+            holding_buy_in = str(holding["buyIn"])
+            holding_buy_in = holding_buy_in + "€"
             holding_number = str(holding["number"])
-            #holding_buy_date = holding["buyDate"]
-            holding_data = [holding_name, holding_price, holding_number]
+            holding_buy_date = str(holding["buyDate"])
+            holding_data = [holding_name, holding_price, holding_buy_in, holding_number, holding_buy_date]
             for data in holding_data:
                 data_from_all_holdings.append(data)
+        return data_from_all_holdings
 
-        positions = [(i, j) for i in range(amount_of_holdings) for j in range(3)]
+    def show_holdings(self, username):
+        holdings = database.get_holdings_from_user(username)
+        holdings_data = self.return_holdings_data(holdings)
+        amount_of_holdings = len(holdings)
 
-        print(data_from_all_holdings)
-        for position, data in zip(positions, data_from_all_holdings):
-            #print(data)
+        positions = [(i, j) for i in range(amount_of_holdings) for j in range(5)]
+        for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
             label_data = QLabel(data)
             self.grid_holdings.addWidget(label_data, *position)
-
-        """buy_in_one = QLabel(str(12))
-        date_one = QLabel("date")
-        self.holding_one.addWidget(buy_in_one)
-        self.holding_one.addWidget(date_one)
-
-        buy_in_two = QLabel(str(30))
-        date_two = QLabel("date_two")
-        self.holding_two.addWidget(buy_in_two)
-        self.holding_two.addWidget(date_two)
-
-        self.vbox_holdings.addLayout(self.holding_one)
-        self.vbox_holdings.addLayout(self.holding_two)"""
-
-        """for holding in holdings:
-            new_holding = QLabel("Test")
-            self.vbox_holdings.addLayout(self.hbox_single_price)"""
-
-
-
-        # Widget_Holdings
-        self.widget_holdings.setLayout(self.grid_holdings)
-
-        self.show_holdings(username)
-
-    def show_holdings(self, username):
-        all_holdings_from_user = database.get_holdings_from_user(username)
-        print(all_holdings_from_user)
 
     def get_username(self):
         hashcode = hashcode_functions.return_hash_if_exists()

@@ -29,9 +29,6 @@ def username_already_exists(username):
 
 
 
-print(username_already_exists("user"))
-
-
 
 
 
