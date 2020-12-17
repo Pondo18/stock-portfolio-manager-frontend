@@ -88,7 +88,7 @@ class Register(QWidget):
     def register(self, username, password):
         credentials_concatenated = username + ":" + password
         hashcode = hashcode_functions.create_hash(credentials_concatenated)
-        database.create_entry(hashcode, username)
+        database.create_new_user(hashcode, username)
 
 
 if __name__ == "__main__":
