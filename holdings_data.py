@@ -2,10 +2,6 @@ import yfinance as yf
 
 import pandas as pd
 
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.foreignexchange import ForeignExchange
-
-
 from pandas_datareader import data as pdr
 
 yf.pdr_override()

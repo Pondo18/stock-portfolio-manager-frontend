@@ -4,12 +4,9 @@ import math
 
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
-    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView
-from PyQt5.QtCore import Qt, QSize
+    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog
+from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5 import QtWidgets
-from PyQt5.uic.properties import QtGui
-
-
 
 from pyqtgraph import PlotData
 
@@ -55,6 +52,9 @@ class main_gui(QWidget):
 
         # Create TextBox_browse_holdings
         self.textbox_browse_holdings = QLineEdit(self)
+
+        # Create Button_Sell_Holding
+        self.button_sell_holding_old = QPushButton(self)
 
         # Browse_Holdings_Page
         # Create TextBox_Browse_New_Holding
@@ -109,8 +109,9 @@ class main_gui(QWidget):
         holdings = database.get_holdings_from_user(username)
         amount_of_holdings = len(holdings)
         self.table_widget.setRowCount(amount_of_holdings)
-        self.table_widget.setColumnCount(4)
-        self.table_widget.setFont(QFont("Arial", 16))
+        self.table_widget.setColumnCount(5)
+        self.table_widget.setFont(QFont("Arial", 15))
+        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
 
         # Set Horizontal Headers
@@ -118,8 +119,9 @@ class main_gui(QWidget):
         self.table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
         self.table_widget.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
         self.table_widget.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
+        self.table_widget.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
         self.table_widget.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
-        self.table_widget.horizontalHeader().setFont(QFont("Arial", 20))
+        self.table_widget.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
         holding_names = database.get_holding_names_from_user(username)
@@ -132,6 +134,10 @@ class main_gui(QWidget):
         # TextBox_browse_holdings
         self.textbox_browse_holdings.move(size.width()-300, 200)
         self.textbox_browse_holdings.returnPressed.connect(self.change_card_to_browse_holdings)
+
+        # Button_Sell_Holding
+        self.button_sell_holding_old.setText("Sell Holding")
+        self.button_sell_holding_old.clicked.connect(self.sell_holding)
 
     def init_browse_holdings(self):
         self.textbox_browse_new_holding.move(100, 200)
@@ -185,6 +191,27 @@ class main_gui(QWidget):
                     print("Not enough credits")
         else:
             print("Please enter a valid number")
+
+    def sell_holding(self):
+        number_to_sell = self.ask_for_number_to_sell()
+
+    def ask_for_number_to_sell(self):
+        holdings_to_sell, ok_pressed = QInputDialog.getInt(self, "Sell Holdings", "Holdings to sell")
+        if ok_pressed:
+            if holdings_to_sell == 0:
+                return 0, ok_pressed
+            return holdings_to_sell, ok_pressed
+        else:
+            return 0, ok_pressed 
+
+    def buttons_to_dict(self):
+        username = self.get_username()
+        holdings = database.get_holding_names_from_user(username)
+        buttons_from_holdings = {}
+        for holding in holdings:
+            button_from_holding = {holding: QPushButton(self)}
+            buttons_from_holdings.update(button_from_holding)
+        return buttons_from_holdings
 
     def change_card_to_portfolio(self):
         self.show_portfolio_page(True)
@@ -244,6 +271,19 @@ class main_gui(QWidget):
             if data == '':
                 continue
             self.table_widget.setItem(position[0], position[1], QTableWidgetItem(data))
+            self.table_widget.setCellWidget(0, 4, self.button_sell_holding_old)
+        self.show_buttons_in_table(username)
+
+    def show_buttons_in_table(self, username):
+        holdings = database.get_holding_names_from_user(username)
+        buttons_as_dict = self.buttons_to_dict()
+        i = 0
+        for holding in holdings:
+            self.button = buttons_as_dict[holding]
+            self.button.setText("Sell")
+            self.button.clicked.connect(self.sell_holding)
+            self.table_widget.setCellWidget(i, 4, self.button)
+            i += 1
 
     def get_username(self):
         hashcode = hashcode_functions.return_hash_if_exists()
