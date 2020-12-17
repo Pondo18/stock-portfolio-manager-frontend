@@ -72,3 +72,11 @@ def get_buy_in_price(username, holding):
     buy_in = r.json()["number"]
     return buy_in
 
+
+def get_holding_names_from_user(username):
+    r = requests.get(f"http://127.0.0.1:5000/users/{username}/holdings")
+    holdings = r.json()
+    holding_names = []
+    for holding in holdings:
+        holding_names.append(holding["holding"])
+    return holding_names

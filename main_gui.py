@@ -4,9 +4,12 @@ import math
 
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
-    QHBoxLayout, QMainWindow, QGridLayout
+    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView
 from PyQt5.QtCore import Qt, QSize
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets
+from PyQt5.uic.properties import QtGui
+
+
 
 from pyqtgraph import PlotData
 
@@ -44,22 +47,11 @@ class main_gui(QWidget):
         self.label_portfolio = QLabel(self)
 
         # Scroll_Menu
-
-        # Create Label_Scroll_Menu_Above
-        self.label_holding = QLabel(self)
-        self.label_price = QLabel(self)
-        self.label_buy_in = QLabel(self)
-        self.label_number = QLabel(self)
-        self.label_buy_date = QLabel(self)
-
         # Create Scroll_Holdings
         self.scroll_holdings = QScrollArea(self)
 
-        # Create Widget_Holdings
-        self.widget_holdings = QWidget()
-
-        # Create Grid_Holdings
-        self.grid_holdings = QGridLayout()
+        # Create Table_Widget
+        self.table_widget = QTableWidget(self)
 
         # Create TextBox_browse_holdings
         self.textbox_browse_holdings = QLineEdit(self)
@@ -106,38 +98,36 @@ class main_gui(QWidget):
         self.label_portfolio.setFont(QFont("Arial", 30))
 
         # Scroll_Menu
-
-        horizontal_size_scroll_menu = size.width() - 500
-        horizontal_size_scroll_menu_label_distance = horizontal_size_scroll_menu / 4
-        distance_yet = 110
-        n = size.width() / 168
-
-        self.label_holding.setText("Holding")
-        self.label_holding.move(int(distance_yet), 370)
-        distance_yet += horizontal_size_scroll_menu_label_distance
-        self.label_price.setText("Price")
-        self.label_price.move(int(distance_yet - n), 370)
-        distance_yet += horizontal_size_scroll_menu_label_distance
-        self.label_buy_in.setText("BuyIn Price")
-        self.label_buy_in.move(int(distance_yet - n * 2), 370)
-        distance_yet += horizontal_size_scroll_menu_label_distance
-        self.label_number.setText("Number of holdings")
-        self.label_number.move(int(distance_yet - n * 3), 370)
-        distance_yet += horizontal_size_scroll_menu_label_distance
-        self.label_buy_date.setText("Buy Date")
-        self.label_buy_date.move(int(distance_yet - n * 3), 370)
-
         # Scroll_Holdings
         self.scroll_holdings.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scroll_holdings.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_holdings.setWidgetResizable(True)
-        self.scroll_holdings.setWidget(self.widget_holdings)
+        self.scroll_holdings.setWidget(self.table_widget)
         self.scroll_holdings.setGeometry(100, 400, size.width() - 200, size.height() - 500)
 
-        self.show_holdings_in_grid(username)
+        # Table_Widget
+        holdings = database.get_holdings_from_user(username)
+        amount_of_holdings = len(holdings)
+        self.table_widget.setRowCount(amount_of_holdings)
+        self.table_widget.setColumnCount(4)
+        self.table_widget.setFont(QFont("Arial", 16))
 
-        # Widget_Holdings
-        self.widget_holdings.setLayout(self.grid_holdings)
+
+        # Set Horizontal Headers
+        self.table_widget.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
+        self.table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
+        self.table_widget.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
+        self.table_widget.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
+        self.table_widget.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.table_widget.horizontalHeader().setFont(QFont("Arial", 20))
+
+        # Set Vertical Headers
+        holding_names = database.get_holding_names_from_user(username)
+        for i in range(amount_of_holdings):
+            self.table_widget.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
+        self.table_widget.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+
+        self.show_holdings_in_table(username)
 
         # TextBox_browse_holdings
         self.textbox_browse_holdings.move(size.width()-300, 200)
@@ -200,7 +190,6 @@ class main_gui(QWidget):
         self.show_portfolio_page(True)
         self.show_browse_holdings_page(False)
 
-
     def change_card_to_browse_holdings(self):
         self.init_browse_holdings()
         self.show_portfolio_page(False)
@@ -240,22 +229,21 @@ class main_gui(QWidget):
             holding_buy_in = holding_buy_in + "$"
             holding_number = str(holding["number"])
             holding_buy_date = str(holding["buyDate"])
-            holding_data = [holding_name, holding_price, holding_buy_in, holding_number, holding_buy_date]
+            holding_data = [holding_price, holding_buy_in, holding_number, holding_buy_date]
             for data in holding_data:
                 data_from_all_holdings.append(data)
         return data_from_all_holdings
 
-    def show_holdings_in_grid(self, username):
+    def show_holdings_in_table(self, username):
         holdings = database.get_holdings_from_user(username)
         holdings_data = self.return_holdings_data_for_portfolio(holdings)
         amount_of_holdings = len(holdings)
 
-        positions = [(i, j) for i in range(amount_of_holdings) for j in range(5)]
+        positions = [(i, j) for i in range(amount_of_holdings) for j in range(4)]
         for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
-            label_data = QLabel(data)
-            self.grid_holdings.addWidget(label_data, *position)
+            self.table_widget.setItem(position[0], position[1], QTableWidgetItem(data))
 
     def get_username(self):
         hashcode = hashcode_functions.return_hash_if_exists()
@@ -274,17 +262,12 @@ class main_gui(QWidget):
             # Show Labels
             self.label_credits.show()
             self.label_portfolio.show()
-            self.label_holding.show()
-            self.label_price.show()
-            self.label_buy_in.show()
-            self.label_number.show()
-            self.label_buy_date.show()
 
             # Show Scroll_Menu
             self.scroll_holdings.show()
 
-            # Show Widget
-            self.widget_holdings.show()
+            # Show Table_Widget
+            self.table_widget.show()
 
             # Show Textbox
             self.textbox_browse_holdings.show()
@@ -292,17 +275,12 @@ class main_gui(QWidget):
             # Hide Labels
             self.label_credits.hide()
             self.label_portfolio.hide()
-            self.label_holding.hide()
-            self.label_price.hide()
-            self.label_buy_in.hide()
-            self.label_number.hide()
-            self.label_buy_date.hide()
 
             # Hide Scroll_Menu
             self.scroll_holdings.hide()
 
-            # Hide Widget
-            self.widget_holdings.hide()
+            # Hide Table_Widget
+            self.table_widget.hide()
 
             # Hide Textbox
             self.textbox_browse_holdings.hide()
