@@ -49,7 +49,7 @@ def change_credits(username, new_credits):
     return r.json()
 
 
-def amount_of_holdings_user_already_has(username, holding):
+def get_amount_of_holdings_user_already_has(username, holding):
     r = requests.get(f"http://127.0.0.1:5000/users/{username}/holdings/{holding}")
     try:
         number = r.json()["number"]
@@ -69,7 +69,7 @@ def user_already_has_holding(username, holding):
 
 def get_buy_in_price(username, holding):
     r = requests.get(f"http://127.0.0.1:5000/users/{username}/holdings/{holding}")
-    buy_in = r.json()["number"]
+    buy_in = r.json()["buyIn"]
     return buy_in
 
 

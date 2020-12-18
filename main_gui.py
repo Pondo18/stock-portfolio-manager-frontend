@@ -4,7 +4,8 @@ import math
 
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
-    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog
+    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, \
+    QButtonGroup
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5 import QtWidgets
 
@@ -14,7 +15,7 @@ import database
 
 import hashcode_functions
 
-import holdings_data
+import holdings_data_functions
 
 
 class main_gui(QWidget):
@@ -53,9 +54,6 @@ class main_gui(QWidget):
         # Create TextBox_browse_holdings
         self.textbox_browse_holdings = QLineEdit(self)
 
-        # Create Button_Sell_Holding
-        self.button_sell_holding_old = QPushButton(self)
-
         # Browse_Holdings_Page
         # Create TextBox_Browse_New_Holding
         self.textbox_browse_new_holding = QLineEdit(self)
@@ -77,6 +75,10 @@ class main_gui(QWidget):
 
         username = self.get_username()
         self.init_me(username, size)
+
+        self.which_holdings_button = 1
+
+        self.holdings_data = ""
 
         self.show()
 
@@ -105,39 +107,12 @@ class main_gui(QWidget):
         self.scroll_holdings.setWidget(self.table_widget)
         self.scroll_holdings.setGeometry(100, 400, size.width() - 200, size.height() - 500)
 
-        # Table_Widget
-        holdings = database.get_holdings_from_user(username)
-        amount_of_holdings = len(holdings)
-        self.table_widget.setRowCount(amount_of_holdings)
-        self.table_widget.setColumnCount(5)
-        self.table_widget.setFont(QFont("Arial", 15))
-        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-
-
-        # Set Horizontal Headers
-        self.table_widget.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
-        self.table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
-        self.table_widget.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
-        self.table_widget.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
-        self.table_widget.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
-        self.table_widget.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
-        self.table_widget.horizontalHeader().setFont(QFont("Arial", 18))
-
-        # Set Vertical Headers
-        holding_names = database.get_holding_names_from_user(username)
-        for i in range(amount_of_holdings):
-            self.table_widget.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
-        self.table_widget.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
-
-        self.show_holdings_in_table(username)
+        # Init Table
+        self.table_first_init(username)
 
         # TextBox_browse_holdings
         self.textbox_browse_holdings.move(size.width()-300, 200)
         self.textbox_browse_holdings.returnPressed.connect(self.change_card_to_browse_holdings)
-
-        # Button_Sell_Holding
-        self.button_sell_holding_old.setText("Sell Holding")
-        self.button_sell_holding_old.clicked.connect(self.sell_holding)
 
     def init_browse_holdings(self):
         self.textbox_browse_new_holding.move(100, 200)
@@ -159,18 +134,46 @@ class main_gui(QWidget):
         self.textbox_number_of_holdings.move(300, 300)
         self.textbox_number_of_holdings.setToolTip("Number of holdings you want to buy")
 
+    def init_table(self, username):
+        holding_names = database.get_holding_names_from_user(username)
+        amount_of_holdings = len(holding_names)
+
+        self.table_widget.setRowCount(amount_of_holdings)
+        self.table_widget.setColumnCount(5)
+        self.table_widget.setFont(QFont("Arial", 15))
+        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        # Set Horizontal Headers
+        self.table_widget.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
+        self.table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
+        self.table_widget.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
+        self.table_widget.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
+        self.table_widget.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
+        self.table_widget.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.table_widget.horizontalHeader().setFont(QFont("Arial", 18))
+
+        # Set Vertical Headers
+        self.table_widget.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+
+        for i in range(amount_of_holdings):
+            self.table_widget.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
+
+    def table_first_init(self, username):
+        self.init_table(username)
+        self.show_holdings_in_table(username)
+
     def buy_holding(self):
         username = self.get_username()
         holding = self.label_holding_name.text()
         holding_price = float(self.label_holding_price.text())
         holding_price = int(round(holding_price))
-        user_credits = float(self.label_credits.text())
+        user_credits = database.get_credits_by_username(username)
         user_credits = int(round(user_credits))
         number_of_new_holdings = int(self.textbox_number_of_holdings.text())
         number_of_new_holdings = round(number_of_new_holdings)
         if not math.isnan(number_of_new_holdings):
             if database.user_already_has_holding(username, holding):
-                number_of_holdings_user_already_has = database.amount_of_holdings_user_already_has(username, holding)
+                number_of_holdings_user_already_has = database.get_amount_of_holdings_user_already_has(username, holding)
                 if user_credits > holding_price * number_of_new_holdings:
                     old_buy_in_price = database.get_buy_in_price(username, holding)
                     number_of_total_holdings = number_of_holdings_user_already_has + number_of_new_holdings
@@ -192,8 +195,34 @@ class main_gui(QWidget):
         else:
             print("Please enter a valid number")
 
-    def sell_holding(self):
-        number_to_sell = self.ask_for_number_to_sell()
+        self.update_table(username)
+
+    def sell_holding(self, which_button_index):
+        number_to_sell, is_sell_holding = self.ask_for_number_to_sell()
+        if is_sell_holding:
+            index_of_clicked_button = which_button_index
+            username = self.get_username()
+            holdings = database.get_holding_names_from_user(username)
+            holding = holdings[index_of_clicked_button]
+            old_user_credits = database.get_credits_by_username(username)
+            old_amount_of_holdings = database.get_amount_of_holdings_user_already_has(username, holding)
+            current_holding_price = holdings_data_functions.get_price_of_holding(holding)
+            new_amount_of_credits = old_user_credits + current_holding_price * number_to_sell
+            new_amount_of_holdings = old_amount_of_holdings - number_to_sell
+            buy_in = database.get_buy_in_price(username, holding)
+
+            database.change_credits(username, new_amount_of_credits)
+            database.change_number_of_holdings(username, holding, new_amount_of_holdings, buy_in)
+
+            self.update_table(username)
+
+    def update_table(self, username):
+        self.update_credits(username)
+        self.table_widget.clear()
+        holdings = database.get_holdings_from_user(username)
+        holdings_data_as_list = self.return_holdings_data_for_portfolio(holdings)
+        self.init_table(username)
+        self.show_holdings_in_table(username)
 
     def ask_for_number_to_sell(self):
         holdings_to_sell, ok_pressed = QInputDialog.getInt(self, "Sell Holdings", "Holdings to sell")
@@ -202,7 +231,7 @@ class main_gui(QWidget):
                 return 0, ok_pressed
             return holdings_to_sell, ok_pressed
         else:
-            return 0, ok_pressed 
+            return 0, ok_pressed
 
     def buttons_to_dict(self):
         username = self.get_username()
@@ -216,6 +245,7 @@ class main_gui(QWidget):
     def change_card_to_portfolio(self):
         self.show_portfolio_page(True)
         self.show_browse_holdings_page(False)
+        self.textbox_browse_holdings.clear()
 
     def change_card_to_browse_holdings(self):
         self.init_browse_holdings()
@@ -225,9 +255,9 @@ class main_gui(QWidget):
 
     def browse_holding(self):
         holding_name = self.textbox_browse_holdings.text()
-        if holdings_data.holding_exists(holding_name):
+        if holdings_data_functions.holding_exists(holding_name):
             self.label_holding_name.setText(holding_name)
-            holding_price = holdings_data.get_price_of_holding(holding_name)
+            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
             self.label_holding_price.setText(str(holding_price))
         else:
             self.label_holding_name.setText("Holding doesn't exist")
@@ -235,9 +265,9 @@ class main_gui(QWidget):
 
     def browse_new_holding(self):
         holding_name = self.textbox_browse_new_holding.text()
-        if holdings_data.holding_exists(holding_name):
+        if holdings_data_functions.holding_exists(holding_name):
             self.label_holding_name.setText(holding_name)
-            holding_price = holdings_data.get_price_of_holding(holding_name)
+            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
             self.label_holding_price.setText(str(holding_price))
             self.button_buy_holding.setEnabled(True)
         else:
@@ -249,7 +279,7 @@ class main_gui(QWidget):
 
         for holding in holdings:
             holding_name = holding["holding"]
-            holding_price = holdings_data.get_price_of_holding(holding_name)
+            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
             holding_price = round(holding_price, 2)
             holding_price = str(holding_price) + "$"
             holding_buy_in = str(holding["buyIn"])
@@ -271,26 +301,29 @@ class main_gui(QWidget):
             if data == '':
                 continue
             self.table_widget.setItem(position[0], position[1], QTableWidgetItem(data))
-            self.table_widget.setCellWidget(0, 4, self.button_sell_holding_old)
         self.show_buttons_in_table(username)
 
     def show_buttons_in_table(self, username):
         holdings = database.get_holding_names_from_user(username)
         buttons_as_dict = self.buttons_to_dict()
-        i = 0
+        button_index = 0
+        self.button_group_sell = QButtonGroup(self)
         for holding in holdings:
             self.button = buttons_as_dict[holding]
             self.button.setText("Sell")
-            self.button.clicked.connect(self.sell_holding)
-            self.table_widget.setCellWidget(i, 4, self.button)
-            i += 1
+
+            self.button_group_sell.addButton(self.button)
+
+            self.button.clicked.connect(lambda state, x=button_index: self.sell_holding(x))
+            self.table_widget.setCellWidget(button_index, 4, self.button)
+            button_index += 1
 
     def get_username(self):
         hashcode = hashcode_functions.return_hash_if_exists()
         username = database.get_username_by_hashcode(hashcode)
         return username
 
-    def credits_aktualisieren(self, username):
+    def update_credits(self, username):
         user_credits = database.get_credits_by_username(username)
         self.label_credits.setText(str(user_credits))
 
