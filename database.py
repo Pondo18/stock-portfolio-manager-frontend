@@ -37,13 +37,13 @@ def create_new_holding(username, holding, number, buy_in):
     return r.json()
 
 
-def change_number_of_holdings(username, holding, number, buy_in):
+def update_number_of_holdings(username, holding, number, buy_in):
     entry_data = {'number': number, 'buyIn': buy_in}
     r = requests.put(f"http://127.0.0.1:5000/users/{username}/holdings/{holding}", json=entry_data)
     return r.json()
 
 
-def change_credits(username, new_credits):
+def update_credits_in_database(username, new_credits):
     entry_data = {'credits': new_credits}
     r = requests.put(f"http://127.0.0.1:5000/users/{username}", json=entry_data)
     return r.json()
@@ -80,3 +80,4 @@ def get_holding_names_from_user(username):
     for holding in holdings:
         holding_names.append(holding["holding"])
     return holding_names
+

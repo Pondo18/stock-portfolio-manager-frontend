@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QLabel
 
 import database
 
-import hashcode_functions
+import hashcode_utils
 
 
 class Register(QWidget):
@@ -87,14 +87,14 @@ class Register(QWidget):
 
     def register(self, username, password):
         credentials_concatenated = username + ":" + password
-        hashcode = hashcode_functions.create_hash(credentials_concatenated)
+        hashcode = hashcode_utils.create_hash(credentials_concatenated)
         database.create_new_user(hashcode, username)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    if hashcode_functions.return_hash_if_exists()[1]:
-        hashcode = hashcode_functions.return_hash_if_exists()
+    if hashcode_utils.return_hash_if_exists()[1]:
+        hashcode = hashcode_utils.return_hash_if_exists()
         username = database.get_username_by_hashcode(hashcode)
         database.get_credits_by_username(username)
     else:

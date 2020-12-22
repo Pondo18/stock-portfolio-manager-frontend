@@ -2,20 +2,25 @@ import sys
 
 import math
 
+import time
+
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
-    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, \
-    QButtonGroup
+    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, \
+    QInputDialog, QButtonGroup
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5 import QtWidgets
 
-from pyqtgraph import PlotData
+from pyqtgraph import PlotData, PlotWidget, AxisItem
 
 import database
 
-import hashcode_functions
+import hashcode_utils
 
-import holdings_data_functions
+import holdings_data_utils
+
+
+#  TODO: Dynamischee Größen
 
 
 class main_gui(QWidget):
@@ -73,6 +78,15 @@ class main_gui(QWidget):
         # Create Label_Holding_Price
         self.label_holding_price = QLabel(self)
 
+        # Create Layout_Hold_Graph_Portfolio
+        self.layout_hold_graph_portfolio = QVBoxLayout(self)
+        self.widget_hold_graph_portfolio = QWidget(self)
+
+        # Create Graph_For_Portfolio
+        self.date_axis = DateAxis(orientation="bottom")
+        self.graph_for_portfolio = PlotWidget(self, axisItems={'bottom': self.date_axis}, enableMenu=False,
+                                              title='Holding Data')
+
         username = self.get_username()
         self.init_me(username, size)
 
@@ -90,12 +104,12 @@ class main_gui(QWidget):
         user_credits = database.get_credits_by_username(username)
 
         # Label_Credits
-        self.label_credits.move(400, 100)
+        self.label_credits.move(400, 50)
         self.label_credits.setText(str(user_credits))
         self.label_credits.setFont(QFont("Arial", 50))
 
         # Label_Portfolio
-        self.label_portfolio.move(150, 250)
+        self.label_portfolio.move(150, 50)
         self.label_portfolio.setText("Your Portfolio")
         self.label_portfolio.setFont(QFont("Arial", 30))
 
@@ -105,14 +119,20 @@ class main_gui(QWidget):
         self.scroll_holdings.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_holdings.setWidgetResizable(True)
         self.scroll_holdings.setWidget(self.table_widget)
-        self.scroll_holdings.setGeometry(100, 400, size.width() - 200, size.height() - 500)
+        self.scroll_holdings.setGeometry(100, 500, size.width() - 200, size.height() - 500)
 
         # Init Table
         self.table_first_init(username)
 
         # TextBox_browse_holdings
-        self.textbox_browse_holdings.move(size.width()-300, 200)
+        self.textbox_browse_holdings.move(size.width() - 300, 50)
         self.textbox_browse_holdings.returnPressed.connect(self.change_card_to_browse_holdings)
+
+        # Graph
+        self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
+        self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
+        self.widget_hold_graph_portfolio.setGeometry(100, 100, 1460, 400)
+        self.update_graph(username, "SAP", "1Y")
 
     def init_browse_holdings(self):
         self.textbox_browse_new_holding.move(100, 200)
@@ -158,9 +178,27 @@ class main_gui(QWidget):
         for i in range(amount_of_holdings):
             self.table_widget.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
 
+        self.table_widget.clicked.connect(self.table_clicked)
+
+    def table_clicked(self, item):
+        username = self.get_username()
+        holding_names = database.get_holding_names_from_user(username)
+        row = item.row()
+        clicked_holding_row = holding_names[row]
+        self.update_graph(username, clicked_holding_row, "1y")
+
     def table_first_init(self, username):
         self.init_table(username)
         self.show_holdings_in_table(username)
+
+    # TODO: an generelle Aktien anpassen
+
+    def init_graph(self):
+        holding_data = holdings_data_utils.get_holding_price_for_period("SAP", "1y")
+        prices = holding_data.values
+        date = holding_data.keys()
+        date_in_ticks = self.date_in_ticks(date)
+        self.graph_for_portfolio.plot(x=date_in_ticks, y=prices)
 
     def buy_holding(self):
         username = self.get_username()
@@ -173,22 +211,23 @@ class main_gui(QWidget):
         number_of_new_holdings = round(number_of_new_holdings)
         if not math.isnan(number_of_new_holdings):
             if database.user_already_has_holding(username, holding):
-                number_of_holdings_user_already_has = database.get_amount_of_holdings_user_already_has(username, holding)
+                number_of_holdings_user_already_has = database.get_amount_of_holdings_user_already_has(username,
+                                                                                                       holding)
                 if user_credits > holding_price * number_of_new_holdings:
                     old_buy_in_price = database.get_buy_in_price(username, holding)
                     number_of_total_holdings = number_of_holdings_user_already_has + number_of_new_holdings
                     new_buy_in_price = (old_buy_in_price * number_of_holdings_user_already_has
                                         + holding_price * number_of_new_holdings) / number_of_total_holdings
                     new_buy_in_price = round(new_buy_in_price, 2)
-                    database.change_number_of_holdings(username, holding, number_of_total_holdings, new_buy_in_price)
-                    database.change_credits(username, user_credits-holding_price*number_of_new_holdings)
+                    database.update_number_of_holdings(username, holding, number_of_total_holdings, new_buy_in_price)
+                    database.update_credits_in_database(username, user_credits - holding_price * number_of_new_holdings)
                     print("Bought Holding")
                 else:
                     print("Not enough credits")
             else:
                 if user_credits > holding_price:
-                    database.create_new_holding(username, holding,  number_of_new_holdings, holding_price)
-                    database.change_credits(username, holding_price)
+                    database.create_new_holding(username, holding, number_of_new_holdings, holding_price)
+                    database.update_credits_in_database(username, holding_price)
                     print("Bought Holding")
                 else:
                     print("Not enough credits")
@@ -206,13 +245,13 @@ class main_gui(QWidget):
             holding = holdings[index_of_clicked_button]
             old_user_credits = database.get_credits_by_username(username)
             old_amount_of_holdings = database.get_amount_of_holdings_user_already_has(username, holding)
-            current_holding_price = holdings_data_functions.get_price_of_holding(holding)
+            current_holding_price = holdings_data_utils.get_current_price_of_holding(holding)
             new_amount_of_credits = old_user_credits + current_holding_price * number_to_sell
             new_amount_of_holdings = old_amount_of_holdings - number_to_sell
             buy_in = database.get_buy_in_price(username, holding)
 
-            database.change_credits(username, new_amount_of_credits)
-            database.change_number_of_holdings(username, holding, new_amount_of_holdings, buy_in)
+            database.update_credits_in_database(username, new_amount_of_credits)
+            database.update_number_of_holdings(username, holding, new_amount_of_holdings, buy_in)
 
             self.update_table(username)
 
@@ -220,9 +259,21 @@ class main_gui(QWidget):
         self.update_credits(username)
         self.table_widget.clear()
         holdings = database.get_holdings_from_user(username)
-        holdings_data_as_list = self.return_holdings_data_for_portfolio(holdings)
+        # holdings_data_as_list = self.return_holdings_data_for_portfolio(holdings)
         self.init_table(username)
         self.show_holdings_in_table(username)
+
+    def update_graph(self, username, holding, period):
+        self.graph_for_portfolio.clear()
+        self.graph_for_portfolio.setTitle(title=holding)
+        holding_data = holdings_data_utils.get_holding_price_for_period(holding, period)
+        prices = holding_data.values
+        date = holding_data.keys()
+        date_in_ticks = self.date_in_ticks(date)
+        self.graph_for_portfolio.plot(x=date_in_ticks, y=prices)
+
+    def date_in_ticks(self, dates):
+        return [date.timestamp() for date in dates]
 
     def ask_for_number_to_sell(self):
         holdings_to_sell, ok_pressed = QInputDialog.getInt(self, "Sell Holdings", "Holdings to sell")
@@ -255,9 +306,9 @@ class main_gui(QWidget):
 
     def browse_holding(self):
         holding_name = self.textbox_browse_holdings.text()
-        if holdings_data_functions.holding_exists(holding_name):
+        if holdings_data_utils.holding_exists(holding_name):
             self.label_holding_name.setText(holding_name)
-            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
+            holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
             self.label_holding_price.setText(str(holding_price))
         else:
             self.label_holding_name.setText("Holding doesn't exist")
@@ -265,9 +316,9 @@ class main_gui(QWidget):
 
     def browse_new_holding(self):
         holding_name = self.textbox_browse_new_holding.text()
-        if holdings_data_functions.holding_exists(holding_name):
+        if holdings_data_utils.holding_exists(holding_name):
             self.label_holding_name.setText(holding_name)
-            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
+            holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
             self.label_holding_price.setText(str(holding_price))
             self.button_buy_holding.setEnabled(True)
         else:
@@ -279,7 +330,7 @@ class main_gui(QWidget):
 
         for holding in holdings:
             holding_name = holding["holding"]
-            holding_price = holdings_data_functions.get_price_of_holding(holding_name)
+            holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
             holding_price = round(holding_price, 2)
             holding_price = str(holding_price) + "$"
             holding_buy_in = str(holding["buyIn"])
@@ -319,7 +370,7 @@ class main_gui(QWidget):
             button_index += 1
 
     def get_username(self):
-        hashcode = hashcode_functions.return_hash_if_exists()
+        hashcode = hashcode_utils.return_hash_if_exists()
         username = database.get_username_by_hashcode(hashcode)
         return username
 
@@ -330,7 +381,7 @@ class main_gui(QWidget):
     def show_portfolio_page(self, is_true):
         if is_true:
             # Window Properties
-            #self.title("Portfolio")
+            # self.title("Portfolio")
 
             # Show Labels
             self.label_credits.show()
@@ -344,6 +395,8 @@ class main_gui(QWidget):
 
             # Show Textbox
             self.textbox_browse_holdings.show()
+
+            self.widget_hold_graph_portfolio.show()
         else:
             # Hide Labels
             self.label_credits.hide()
@@ -357,6 +410,8 @@ class main_gui(QWidget):
 
             # Hide Textbox
             self.textbox_browse_holdings.hide()
+
+            self.widget_hold_graph_portfolio.hide()
 
     def show_browse_holdings_page(self, is_true):
         if is_true:
@@ -373,6 +428,39 @@ class main_gui(QWidget):
             self.button_buy_holding.hide()
             self.button_back_to_portfolio.hide()
             self.label_holding_price.hide()
+
+
+class DateAxis(AxisItem):
+    def tickStrings(self, values, scale, spacing):
+        strns = []
+        rng = max(values) - min(values)
+        if rng < 3600 * 24:
+            string = '%H:%M:%S'
+            label1 = '%b %d -'
+            label2 = ' %b %d, %Y'
+        elif rng >= 3600 * 24 and rng < 3600 * 24 * 30:
+            string = '%d'
+            label1 = '%b - '
+            label2 = '%b, %Y'
+        elif rng >= 3600 * 24 * 30 and rng < 3600 * 24 * 30 * 24:
+            string = '%b'
+            label1 = '%Y -'
+            label2 = ' %Y'
+        elif rng >= 3600 * 24 * 30 * 24:
+            string = '%Y'
+            label1 = ''
+            label2 = ''
+        for x in values:
+            try:
+                strns.append(time.strftime(string, time.localtime(x)))
+            except ValueError:
+                strns.append('')
+        try:
+            label = time.strftime(label1, time.localtime(min(values))) + time.strftime(label2,
+                                                                                       time.localtime(max(values)))
+        except ValueError:
+            label = ''
+        return strns
 
 
 if __name__ == "__main__":
