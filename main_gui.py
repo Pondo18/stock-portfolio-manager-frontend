@@ -132,26 +132,32 @@ class main_gui(QWidget):
         self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
         self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
         self.widget_hold_graph_portfolio.setGeometry(100, 100, 1460, 400)
-        self.update_graph(username, "SAP", "1Y")
+        self.update_graph("SAP", "1Y")
 
     def init_browse_holdings(self):
-        self.textbox_browse_new_holding.move(100, 200)
+        screen = app.primaryScreen()
+        size = screen.size()
+        self.textbox_browse_new_holding.move(600, 50)
         self.textbox_browse_holdings.setToolTip("Browse new holding")
         self.textbox_browse_new_holding.returnPressed.connect(self.browse_new_holding)
 
-        self.label_holding_name.move(500, 500)
+        screen_width = size.width()
+        label_holding_name_width = self.label_holding_name.width()
+        print(screen_width)
+        print(label_holding_name_width)
+        self.label_holding_name.move(round((screen_width - label_holding_name_width)/2), 50)
 
-        self.button_buy_holding.move(600, 300)
+        self.button_buy_holding.move(600, 500)
         self.button_buy_holding.setText("Buy Holding")
         self.button_buy_holding.clicked.connect(self.buy_holding)
 
-        self.button_back_to_portfolio.move(100, 100)
+        self.button_back_to_portfolio.move(100, 50)
         self.button_back_to_portfolio.setText("Back to Portfolio")
         self.button_back_to_portfolio.clicked.connect(self.change_card_to_portfolio)
 
-        self.label_holding_price.move(500, 300)
+        self.label_holding_price.move(300, 50)
 
-        self.textbox_number_of_holdings.move(300, 300)
+        self.textbox_number_of_holdings.move(200, 50)
         self.textbox_number_of_holdings.setToolTip("Number of holdings you want to buy")
 
     def init_table(self, username):
@@ -185,7 +191,7 @@ class main_gui(QWidget):
         holding_names = database.get_holding_names_from_user(username)
         row = item.row()
         clicked_holding_row = holding_names[row]
-        self.update_graph(username, clicked_holding_row, "1y")
+        self.update_graph(clicked_holding_row, "1y")
 
     def table_first_init(self, username):
         self.init_table(username)
@@ -263,7 +269,7 @@ class main_gui(QWidget):
         self.init_table(username)
         self.show_holdings_in_table(username)
 
-    def update_graph(self, username, holding, period):
+    def update_graph(self, holding, period):
         self.graph_for_portfolio.clear()
         self.graph_for_portfolio.setTitle(title=holding)
         holding_data = holdings_data_utils.get_holding_price_for_period(holding, period)
@@ -303,6 +309,8 @@ class main_gui(QWidget):
         self.show_portfolio_page(False)
         self.show_browse_holdings_page(True)
         self.browse_holding()
+        holding_to_show = self.textbox_browse_holdings.text()
+        self.update_graph(holding_to_show, "1y")
 
     def browse_holding(self):
         holding_name = self.textbox_browse_holdings.text()
@@ -396,7 +404,7 @@ class main_gui(QWidget):
             # Show Textbox
             self.textbox_browse_holdings.show()
 
-            self.widget_hold_graph_portfolio.show()
+            #self.widget_hold_graph_portfolio.show()
         else:
             # Hide Labels
             self.label_credits.hide()
@@ -411,7 +419,7 @@ class main_gui(QWidget):
             # Hide Textbox
             self.textbox_browse_holdings.hide()
 
-            self.widget_hold_graph_portfolio.hide()
+            #self.widget_hold_graph_portfolio.hide()
 
     def show_browse_holdings_page(self, is_true):
         if is_true:
