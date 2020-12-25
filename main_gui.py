@@ -54,7 +54,7 @@ class main_gui(QWidget):
         self.scroll_holdings = QScrollArea(self)
 
         # Create Table_Widget
-        self.table_widget = QTableWidget(self)
+        self.table_show_all_holdings = QTableWidget(self)
 
         # Create TextBox_browse_holdings
         self.textbox_browse_holdings = QLineEdit(self)
@@ -98,7 +98,14 @@ class main_gui(QWidget):
 
     def init_me(self, username, size):
         self.init_portfolio(username, size)
+        self.init_browse_holdings()
         self.show_browse_holdings_page(False)
+
+        # Graph
+        self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
+        self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
+        self.widget_hold_graph_portfolio.setGeometry(100, 100, 1460, 400)
+        self.update_graph("SAP", "1Y")
 
     def init_portfolio(self, username, size):
         user_credits = database.get_credits_by_username(username)
@@ -118,7 +125,7 @@ class main_gui(QWidget):
         self.scroll_holdings.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scroll_holdings.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_holdings.setWidgetResizable(True)
-        self.scroll_holdings.setWidget(self.table_widget)
+        self.scroll_holdings.setWidget(self.table_show_all_holdings)
         self.scroll_holdings.setGeometry(100, 500, size.width() - 200, size.height() - 500)
 
         # Init Table
@@ -127,12 +134,6 @@ class main_gui(QWidget):
         # TextBox_browse_holdings
         self.textbox_browse_holdings.move(size.width() - 300, 50)
         self.textbox_browse_holdings.returnPressed.connect(self.change_card_to_browse_holdings)
-
-        # Graph
-        self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
-        self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
-        self.widget_hold_graph_portfolio.setGeometry(100, 100, 1460, 400)
-        self.update_graph("SAP", "1Y")
 
     def init_browse_holdings(self):
         screen = app.primaryScreen()
@@ -164,27 +165,27 @@ class main_gui(QWidget):
         holding_names = database.get_holding_names_from_user(username)
         amount_of_holdings = len(holding_names)
 
-        self.table_widget.setRowCount(amount_of_holdings)
-        self.table_widget.setColumnCount(5)
-        self.table_widget.setFont(QFont("Arial", 15))
-        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table_show_all_holdings.setRowCount(amount_of_holdings)
+        self.table_show_all_holdings.setColumnCount(5)
+        self.table_show_all_holdings.setFont(QFont("Arial", 15))
+        self.table_show_all_holdings.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # Set Horizontal Headers
-        self.table_widget.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
-        self.table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
-        self.table_widget.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
-        self.table_widget.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
-        self.table_widget.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
-        self.table_widget.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
-        self.table_widget.horizontalHeader().setFont(QFont("Arial", 18))
+        self.table_show_all_holdings.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
-        self.table_widget.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
 
         for i in range(amount_of_holdings):
-            self.table_widget.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
+            self.table_show_all_holdings.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
 
-        self.table_widget.clicked.connect(self.table_clicked)
+        self.table_show_all_holdings.clicked.connect(self.table_clicked)
 
     def table_clicked(self, item):
         username = self.get_username()
@@ -263,7 +264,7 @@ class main_gui(QWidget):
 
     def update_table(self, username):
         self.update_credits(username)
-        self.table_widget.clear()
+        self.table_show_all_holdings.clear()
         holdings = database.get_holdings_from_user(username)
         # holdings_data_as_list = self.return_holdings_data_for_portfolio(holdings)
         self.init_table(username)
@@ -305,7 +306,6 @@ class main_gui(QWidget):
         self.textbox_browse_holdings.clear()
 
     def change_card_to_browse_holdings(self):
-        self.init_browse_holdings()
         self.show_portfolio_page(False)
         self.show_browse_holdings_page(True)
         self.browse_holding()
@@ -359,7 +359,7 @@ class main_gui(QWidget):
         for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
-            self.table_widget.setItem(position[0], position[1], QTableWidgetItem(data))
+            self.table_show_all_holdings.setItem(position[0], position[1], QTableWidgetItem(data))
         self.show_buttons_in_table(username)
 
     def show_buttons_in_table(self, username):
@@ -374,7 +374,7 @@ class main_gui(QWidget):
             self.button_group_sell.addButton(self.button)
 
             self.button.clicked.connect(lambda state, x=button_index: self.sell_holding(x))
-            self.table_widget.setCellWidget(button_index, 4, self.button)
+            self.table_show_all_holdings.setCellWidget(button_index, 4, self.button)
             button_index += 1
 
     def get_username(self):
@@ -399,12 +399,11 @@ class main_gui(QWidget):
             self.scroll_holdings.show()
 
             # Show Table_Widget
-            self.table_widget.show()
+            self.table_show_all_holdings.show()
 
             # Show Textbox
             self.textbox_browse_holdings.show()
 
-            #self.widget_hold_graph_portfolio.show()
         else:
             # Hide Labels
             self.label_credits.hide()
@@ -414,12 +413,10 @@ class main_gui(QWidget):
             self.scroll_holdings.hide()
 
             # Hide Table_Widget
-            self.table_widget.hide()
+            self.table_show_all_holdings.hide()
 
             # Hide Textbox
             self.textbox_browse_holdings.hide()
-
-            #self.widget_hold_graph_portfolio.hide()
 
     def show_browse_holdings_page(self, is_true):
         if is_true:
