@@ -5,13 +5,12 @@ import math
 import time
 
 from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QSlider, QLineEdit, QPushButton, \
-    QHBoxLayout, QMainWindow, QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, \
-    QInputDialog, QButtonGroup, QStackedWidget, QStackedLayout
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
-from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QLineEdit, QPushButton, \
+                            QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, QButtonGroup,\
+                            QStackedLayout
+from PyQt5.QtCore import Qt
 
-from pyqtgraph import PlotData, PlotWidget, AxisItem
+from pyqtgraph import PlotWidget, AxisItem
 
 import database
 
@@ -20,10 +19,10 @@ import hashcode_utils
 import holdings_data_utils
 
 
-#  TODO: Dynamischee Größen
+#  TODO: Dynamic size
 
 
-class main_gui(QWidget):
+class MainGui(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -261,7 +260,8 @@ class main_gui(QWidget):
         date_in_ticks = self.date_in_ticks(date)
         graph.plot(x=date_in_ticks, y=prices)
 
-    def date_in_ticks(self, dates):
+    @staticmethod
+    def date_in_ticks(dates):
         return [date.timestamp() for date in dates]
 
     def ask_for_number_to_sell(self):
@@ -319,7 +319,8 @@ class main_gui(QWidget):
             self.label_holding_name.adjustSize()
             self.button_buy_holding.setDisabled(True)
 
-    def return_holdings_data_for_portfolio(self, holdings):
+    @staticmethod
+    def get_holdings_data_for_portfolio(holdings):
         data_from_all_holdings = []
 
         for holding in holdings:
@@ -338,7 +339,7 @@ class main_gui(QWidget):
 
     def show_holdings_in_table(self, username):
         holdings = database.get_holdings_from_user(username)
-        holdings_data = self.return_holdings_data_for_portfolio(holdings)
+        holdings_data = self.get_holdings_data_for_portfolio(holdings)
         amount_of_holdings = len(holdings)
 
         positions = [(i, j) for i in range(amount_of_holdings) for j in range(4)]
@@ -352,7 +353,6 @@ class main_gui(QWidget):
         holdings = database.get_holding_names_from_user(username)
         buttons_as_dict = self.buttons_to_dict()
         button_index = 0
-        #self.button_group_sell = QButtonGroup(self)
         for holding in holdings:
             self.button = buttons_as_dict[holding]
             self.button.setText("Sell")
@@ -363,7 +363,8 @@ class main_gui(QWidget):
             self.table_show_all_holdings.setCellWidget(button_index, 4, self.button)
             button_index += 1
 
-    def get_username(self):
+    @staticmethod
+    def get_username():
         hashcode = hashcode_utils.return_hash_if_exists()
         username = database.get_username_by_hashcode(hashcode)
         return username
@@ -381,11 +382,11 @@ class DateAxis(AxisItem):
             string = '%H:%M:%S'
             label1 = '%b %d -'
             label2 = ' %b %d, %Y'
-        elif rng >= 3600 * 24 and rng < 3600 * 24 * 30:
+        elif 3600 * 24 <= rng < 3600 * 24 * 30:
             string = '%d'
             label1 = '%b - '
             label2 = '%b, %Y'
-        elif rng >= 3600 * 24 * 30 and rng < 3600 * 24 * 30 * 24:
+        elif 3600 * 24 * 30 <= rng < 3600 * 24 * 30 * 24:
             string = '%b'
             label1 = '%Y -'
             label2 = ' %Y'
@@ -408,5 +409,5 @@ class DateAxis(AxisItem):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = main_gui()
+    window = MainGui()
     sys.exit(app.exec_())
