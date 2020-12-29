@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QLabel
 
 
@@ -13,6 +13,7 @@ class Register(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Window Properties
         screen = app.primaryScreen()
         size = screen.size()
         self.title = "Register"
@@ -22,19 +23,18 @@ class Register(QWidget):
         self.left = round((size.width() - self.width) / 2)
         self.iconName = "icons/aktien_icon.png"
 
+        # Set Window Properties
         self.setWindowIcon(QIcon(self.iconName))
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
         self.textbox_username = QLineEdit(self)
-
         self.textbox_password = QLineEdit(self)
-
-        #self.icon_username = QLabel(self)
-
-        #self.icon_password = QLabel(self)
-
-        self.label_username_already_taken = QLabel(self)
+        self.pixmap_username = QPixmap('icons/man.png')
+        self.pixmap_password = QPixmap('icons/key.png')
+        self.label_hold_username_icon = QLabel(self)
+        self.label_hold_password_icon = QLabel(self)
+        self.label_error = QLabel(self)
         self.label_username_longer_than_20_chars = QLabel(self)
 
         self.init_me()
@@ -43,46 +43,42 @@ class Register(QWidget):
 
     def init_me(self):
         # TextBox_Username
-        self.textbox_username.move(100, 200)
+        self.textbox_username.move(150, 200)
         self.textbox_username.resize(200, 20)
 
         # Textbox_Password
-        self.textbox_password.move(100, 250)
+        self.textbox_password.move(150, 250)
         self.textbox_password.resize(200, 20)
         self.textbox_password.setEchoMode(QLineEdit.Password)
         self.textbox_password.returnPressed.connect(self.enter_press)
 
-        # Icon_Username
-        """self.icon_username.setPixmap("icons/man.png")
-        self.icon_username.move(80, 200)
+        # Icons
+        self.label_hold_username_icon.setPixmap(self.pixmap_username.scaledToWidth(30))
+        self.label_hold_username_icon.move(110, 190)
+        self.label_hold_password_icon.setPixmap(self.pixmap_password.scaledToWidth(30))
+        self.label_hold_password_icon.move(110, 245)
 
-        # Icon_Password
-        self.icon_password.setPixmap(QtGui.QPixmap("icons/key.png"))
-        self.icon_password.move(80, 250)"""
-
-        # Label_Username_Already_Taken
-        self.label_username_already_taken.move(100, 290)
-        self.label_username_already_taken.setText("Username already taken")
-        self.label_username_already_taken.hide()
-
-        # Label_Username_Longer_Than_20_chars
-        self.label_username_longer_than_20_chars.move(100, 290)
-        self.label_username_longer_than_20_chars.setText("Username shouldn't be longer than 20 character")
-        self.label_username_longer_than_20_chars.hide()
+        # Label_Error
+        self.label_error.move(200, 290)
+        self.label_error.hide()
 
     def enter_press(self):
         typed_in_username = self.textbox_username.text()
         length_username = len(typed_in_username)
         typed_in_password = self.textbox_password.text()
-        if database.username_already_exists(typed_in_username):
+        if not database.username_already_exists(typed_in_username):
             if not length_username > 20:
                 self.register(typed_in_password, typed_in_password)
                 self.close()
             else:
-                self.label_username_longer_than_20_chars.show()
+                self.label_error.setText("Username shouldn't be longer than 20 characters")
+                self.label_error.adjustSize()
+                self.label_error.show()
                 self.textbox_password.clear()
         else:
-            self.label_username_already_taken.show()
+            self.label_error.setText("Username already taken")
+            self.label_error.adjustSize()
+            self.label_error.show()
             self.textbox_password.clear()
 
     def register(self, username, password):

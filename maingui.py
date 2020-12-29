@@ -2,12 +2,14 @@ import sys
 
 import math
 
+import logging
+
 import time
 
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QScrollArea, QVBoxLayout, QLineEdit, QPushButton, \
-                            QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, QButtonGroup,\
-                            QStackedLayout
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, QButtonGroup, \
+    QStackedLayout, QErrorMessage
 from PyQt5.QtCore import Qt
 
 from pyqtgraph import PlotWidget, AxisItem
@@ -26,7 +28,7 @@ class MainGui(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Window properties
+        # Window Properties
         screen = app.primaryScreen()
         size = screen.size()
         self.title = "Portfolio"
@@ -36,7 +38,9 @@ class MainGui(QWidget):
         self.left = 0
         self.iconName = "icons/aktien_icon.png"
 
-        # Set window properties
+        size_units = {"width_unit": round(size.width()/100), "height_unit": round(size.height()/100)}
+
+        # Set Window Properties
         self.setWindowIcon(QIcon(self.iconName))
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -51,6 +55,7 @@ class MainGui(QWidget):
         # Portfolio_page
         self.label_credits = QLabel(self.stack_portfolio)
         self.label_portfolio = QLabel(self.stack_portfolio)
+        self.label_browse_holdings = QLabel(self.stack_portfolio)
         self.textbox_browse_holdings = QLineEdit(self.stack_portfolio)
         # Table
         self.scroll_holdings = QScrollArea(self.stack_portfolio)
@@ -65,11 +70,17 @@ class MainGui(QWidget):
 
         # Browse_Holdings_Page
         self.label_holding_name = QLabel(self.stack_browse_holdings)
+        self.label_label_holding_name = QLabel(self.stack_browse_holdings)
+        self.label_company_name = QLabel(self.stack_browse_holdings)
         self.label_holding_price = QLabel(self.stack_browse_holdings)
+        self.label_label_holding_price = QLabel(self.stack_browse_holdings)
+        self.label_browse_new_holding = QLabel(self.stack_browse_holdings)
+        self.label_credits_browse_holding = QLabel(self.stack_browse_holdings)
+        self.label_label_credits_browse_holding = QLabel(self.stack_browse_holdings)
         self.textbox_browse_new_holding = QLineEdit(self.stack_browse_holdings)
-        self.textbox_number_of_holdings = QLineEdit(self.stack_browse_holdings)
         self.button_buy_holding = QPushButton(self.stack_browse_holdings)
         self.button_back_to_portfolio = QPushButton(self.stack_browse_holdings)
+        self.error_message = QErrorMessage(self.stack_browse_holdings)
         # Graph
         self.layout_hold_graph_browse_holdings = QVBoxLayout(self.stack_browse_holdings)
         self.widget_hold_graph_browse_holdings = QWidget(self.stack_browse_holdings)
@@ -79,29 +90,35 @@ class MainGui(QWidget):
                                                     enableMenu=False, title='Holding Data')
 
         username = self.get_username()
-        self.init_portfolio(username, size)
-        self.init_browse_holdings(size)
+        self.init_portfolio(username, size_units)
+        self.init_browse_holdings(size, size_units)
 
         self.which_holdings_button = 1
         self.holdings_data = ""
 
         self.show()
 
-    def init_portfolio(self, username, size):
+    def init_portfolio(self, username, size_units):
         user_credits = database.get_credits_by_username(username)
+        width_unit = size_units["width_unit"]
+        height_unit = size_units["height_unit"]
 
         # Label_Credits
-        self.label_credits.move(400, 50)
+        self.label_credits.move(width_unit*30, height_unit*3)
         self.label_credits.setText(str(user_credits))
         self.label_credits.setFont(QFont("Arial", 50))
 
         # Label_Portfolio
-        self.label_portfolio.move(150, 50)
+        self.label_portfolio.move(width_unit*8, height_unit*4)
         self.label_portfolio.setText("Your Portfolio")
         self.label_portfolio.setFont(QFont("Arial", 30))
 
+        # Label_Browse_Holdings
+        self.label_browse_holdings.move(width_unit*75, height_unit*5)
+        self.label_browse_holdings.setText("Browse holdings:")
+
         # TextBox_browse_holdings
-        self.textbox_browse_holdings.move(size.width() - 300, 50)
+        self.textbox_browse_holdings.move(width_unit*82, height_unit*5)
         self.textbox_browse_holdings.returnPressed.connect(self.change_card_to_browse_holdings)
 
         # Table
@@ -109,49 +126,57 @@ class MainGui(QWidget):
         self.scroll_holdings.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_holdings.setWidgetResizable(True)
         self.scroll_holdings.setWidget(self.table_show_all_holdings)
-        self.scroll_holdings.setGeometry(100, 500, size.width() - 200, size.height() - 500)
+        self.scroll_holdings.setGeometry(width_unit*6, height_unit*50, width_unit * 88, height_unit * 50)
         self.table_first_init(username)
 
         # Graph
         self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
         self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
-        self.widget_hold_graph_portfolio.setGeometry(100, 100, 1460, 400)
+        self.widget_hold_graph_portfolio.setGeometry(width_unit*7, height_unit*10, width_unit*86, height_unit*40)
         self.update_graph("SAP", "1Y", self.graph_for_portfolio)
 
-    def init_browse_holdings(self, size):
+    def init_browse_holdings(self, size, size_units):
+        width_unit = size_units["width_unit"]
+        height_unit = size_units["height_unit"]
+
+        # Label_Holding_Name
+        self.label_label_holding_name.move(width_unit*7, height_unit*80)
+        self.label_label_holding_name.setText("Holding:")
+        self.label_holding_name.move(width_unit*12, height_unit*80)
+
+        # Label_Holding_Price
+        self.label_label_holding_price.move(width_unit*7, height_unit*83)
+        self.label_label_holding_price.setText("Price:")
+        self.label_holding_price.move(width_unit*12, height_unit*83)
+
+        # Label_Browse_New_Holding
+        self.label_browse_new_holding.move(width_unit*75, height_unit*5)
+        self.label_browse_new_holding.setText("Browse holdings:")
+
+        # Label_Credits
+        self.label_label_credits_browse_holding.move(width_unit*80, height_unit*80)
+        self.label_label_credits_browse_holding.setText('Credits:')
+        self.label_credits_browse_holding.move(width_unit*83, height_unit*80)
+
         # TextBox_Browse_New_Holding
-        self.textbox_browse_new_holding.move(600, 50)
+        self.textbox_browse_new_holding.move(width_unit*82, height_unit*5)
         self.textbox_browse_new_holding.setToolTip("Browse new holding")
         self.textbox_browse_new_holding.returnPressed.connect(self.browse_new_holding)
 
-        # Label_Holding_Name
-        screen_width = size.width()
-        label_holding_name_width = self.label_holding_name.width()
-        print(screen_width)
-        print(label_holding_name_width)
-        self.label_holding_name.move(round((screen_width - label_holding_name_width)/2), 50)
-
         # Button_Buy_holding
-        self.button_buy_holding.move(600, 500)
+        self.button_buy_holding.move(width_unit*80, height_unit*83)
         self.button_buy_holding.setText("Buy Holding")
         self.button_buy_holding.clicked.connect(self.buy_holding)
 
         # Button_Back_To_Portfolio
-        self.button_back_to_portfolio.move(100, 50)
+        self.button_back_to_portfolio.move(width_unit*7, height_unit*4)
         self.button_back_to_portfolio.setText("Back to Portfolio")
         self.button_back_to_portfolio.clicked.connect(self.change_card_to_portfolio)
-
-        # Label_Holding_Price
-        self.label_holding_price.move(300, 50)
-
-        # Textbox_Number_Of_Holdings
-        self.textbox_number_of_holdings.move(200, 50)
-        self.textbox_number_of_holdings.setToolTip("Number of holdings you want to buy")
 
         # Graph
         self.layout_hold_graph_browse_holdings.addWidget(self.graph_for_browse_holdings)
         self.widget_hold_graph_browse_holdings.setLayout(self.layout_hold_graph_browse_holdings)
-        self.widget_hold_graph_browse_holdings.setGeometry(100, 100, 1460, 400)
+        self.widget_hold_graph_browse_holdings.setGeometry(width_unit*7, height_unit*10, width_unit*86, height_unit*60)
 
     def init_table(self, username):
         holding_names = database.get_holding_names_from_user(username)
@@ -191,43 +216,42 @@ class MainGui(QWidget):
         self.show_holdings_in_table(username)
 
     def buy_holding(self):
-        username = self.get_username()
-        holding = self.label_holding_name.text()
-        holding_price = float(self.label_holding_price.text())
-        holding_price = int(round(holding_price))
-        user_credits = database.get_credits_by_username(username)
-        user_credits = int(round(user_credits))
-        number_of_new_holdings = int(self.textbox_number_of_holdings.text())
-        number_of_new_holdings = round(number_of_new_holdings)
-        if not math.isnan(number_of_new_holdings):
+        number_to_buy, is_buy_holding = self.how_many_holdings("buy")
+        if is_buy_holding:
+            username = self.get_username()
+            holding = self.label_holding_name.text()
+            holding_price = float(self.label_holding_price.text())
+            holding_price = int(round(holding_price))
+            user_credits = database.get_credits_by_username(username)
             if database.user_already_has_holding(username, holding):
                 number_of_holdings_user_already_has = database.get_amount_of_holdings_user_already_has(username,
                                                                                                        holding)
-                if user_credits > holding_price * number_of_new_holdings:
+                if user_credits > holding_price * number_to_buy:
                     old_buy_in_price = database.get_buy_in_price(username, holding)
-                    number_of_total_holdings = number_of_holdings_user_already_has + number_of_new_holdings
+                    number_of_total_holdings = number_of_holdings_user_already_has + number_to_buy
                     new_buy_in_price = (old_buy_in_price * number_of_holdings_user_already_has
-                                        + holding_price * number_of_new_holdings) / number_of_total_holdings
+                                        + holding_price * number_to_buy) / number_of_total_holdings
                     new_buy_in_price = round(new_buy_in_price, 2)
                     database.update_number_of_holdings(username, holding, number_of_total_holdings, new_buy_in_price)
-                    database.update_credits_in_database(username, user_credits - holding_price * number_of_new_holdings)
+                    new_amount_of_credits = user_credits - holding_price * number_to_buy
+                    print(new_amount_of_credits)
+                    database.update_credits_in_database(username, new_amount_of_credits)
+                    self.label_credits_browse_holding.setText(str(new_amount_of_credits))
+                    self.label_credits_browse_holding.adjustSize()
                     print("Bought Holding")
                 else:
-                    print("Not enough credits")
+                    self.error_message.showMessage('Not enough credits')
             else:
-                if user_credits > holding_price:
-                    database.create_new_holding(username, holding, number_of_new_holdings, holding_price)
-                    database.update_credits_in_database(username, holding_price)
+                if user_credits > holding_price * number_to_buy:
+                    database.create_new_holding(username, holding, number_to_buy, holding_price)
+                    new_amount_of_credits = user_credits - holding_price * number_to_buy
+                    database.update_credits_in_database(username, new_amount_of_credits)
                     print("Bought Holding")
                 else:
-                    print("Not enough credits")
-        else:
-            print("Please enter a valid number")
-
-        self.update_table(username)
+                    self.error_message.showMessage('Not enough credits')
 
     def sell_holding(self, which_button_index):
-        number_to_sell, is_sell_holding = self.ask_for_number_to_sell()
+        number_to_sell, is_sell_holding = self.how_many_holdings("sell")
         if is_sell_holding:
             index_of_clicked_button = which_button_index
             username = self.get_username()
@@ -264,12 +288,15 @@ class MainGui(QWidget):
     def date_in_ticks(dates):
         return [date.timestamp() for date in dates]
 
-    def ask_for_number_to_sell(self):
-        holdings_to_sell, ok_pressed = QInputDialog.getInt(self, "Sell Holdings", "Holdings to sell")
+    def how_many_holdings(self, action):
+        if action == "buy":
+            amount_of_holdings, ok_pressed = QInputDialog.getInt(self, "Buy Holdings", "Holdings to buy")
+        if action == "sell":
+            amount_of_holdings, ok_pressed = QInputDialog.getInt(self, "Sell Holdings", "Holdings to sell")
         if ok_pressed:
-            if holdings_to_sell == 0:
+            if amount_of_holdings == 0:
                 return 0, ok_pressed
-            return holdings_to_sell, ok_pressed
+            return amount_of_holdings, ok_pressed
         else:
             return 0, ok_pressed
 
@@ -285,12 +312,21 @@ class MainGui(QWidget):
     def change_card_to_portfolio(self):
         self.stack.setCurrentIndex(0)
         self.textbox_browse_holdings.clear()
+        username = self.get_username()
+        user_credits = database.get_credits_by_username(username)
+        self.label_credits.setText(str(user_credits))
+        self.label_credits.adjustSize()
+        self.update_table(username)
 
     def change_card_to_browse_holdings(self):
         self.stack.setCurrentIndex(1)
         self.browse_holding()
         holding_to_show = self.textbox_browse_holdings.text()
         self.update_graph(holding_to_show, "1y", self.graph_for_browse_holdings)
+        username = self.get_username()
+        user_credits = database.get_credits_by_username(username)
+        self.label_credits_browse_holding.setText(str(user_credits))
+        self.label_credits_browse_holding.adjustSize()
 
     def browse_holding(self):
         holding_name = self.textbox_browse_holdings.text()
@@ -314,6 +350,7 @@ class MainGui(QWidget):
             self.label_holding_price.setText(str(holding_price))
             self.label_holding_price.adjustSize()
             self.button_buy_holding.setEnabled(True)
+            self.update_graph(holding_name, "1y", self.graph_for_browse_holdings)
         else:
             self.label_holding_name.setText("Holding doesn't exist")
             self.label_holding_name.adjustSize()

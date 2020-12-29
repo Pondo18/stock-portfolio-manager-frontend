@@ -37,3 +37,8 @@ def get_all_holdings_prices(holdings, period):
     all_holdings = []
     for holding in holdings:
         tickers.tickers
+
+
+def get_holding_sector(holding):
+    ticker = yf.Ticker(holding)
+    return ticker.info["sector"]
