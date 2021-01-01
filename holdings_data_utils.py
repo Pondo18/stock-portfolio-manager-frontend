@@ -1,11 +1,5 @@
 import yfinance as yf
 
-import pandas as pd
-
-from pandas_datareader import data as pdr
-
-yf.pdr_override()
-
 
 def get_current_price_of_holding(holding):
     obj = yf.Ticker(holding)
@@ -32,13 +26,5 @@ def get_holding_price_for_period(holding, period):
     return price
 
 
-def get_all_holdings_prices(holdings, period):
-    tickers = yf.Tickers(holdings)
-    all_holdings = []
-    for holding in holdings:
-        tickers.tickers
-
-
-def get_holding_sector(holding):
-    ticker = yf.Ticker(holding)
-    return ticker.info["sector"]
+if __name__ == "__main__":
+    yf.pdr_override()

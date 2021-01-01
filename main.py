@@ -91,7 +91,8 @@ class Register(QWidget):
             self.label_error.show()
             self.textbox_password.clear()
 
-    def register(self, entered_username, password):
+    @staticmethod
+    def register(entered_username, password):
         credentials_concatenated = entered_username + ":" + password
         generated_hash = hashcode_utils.create_hash(credentials_concatenated)
         database.create_new_user(generated_hash, entered_username)
@@ -127,7 +128,7 @@ class MainGui(QWidget):
 
         # Portfolio_page
         self.label_credits = QLabel(self.stack_portfolio)
-        self.label_portfolio = QLabel(self.stack_portfolio)
+        self.label_label_credits = QLabel(self.stack_portfolio)
         self.label_browse_holdings = QLabel(self.stack_portfolio)
         self.textbox_browse_holdings = QLineEdit(self.stack_portfolio)
         # Table
@@ -164,7 +165,7 @@ class MainGui(QWidget):
 
         username = self.get_username()
         self.init_portfolio(username, size_units)
-        self.init_browse_holdings(size, size_units)
+        self.init_browse_holdings(size_units)
 
         self.which_holdings_button = 1
         self.holdings_data = ""
@@ -177,14 +178,12 @@ class MainGui(QWidget):
         height_unit = size_units["height_unit"]
 
         # Label_Credits
-        self.label_credits.move(width_unit*30, height_unit*3)
+        self.label_label_credits.move(width_unit*8, height_unit*3)
+        self.label_label_credits.setText("Credits:")
+        self.label_label_credits.setFont(QFont("Arial", 50))
+        self.label_credits.move(width_unit*20, height_unit*3)
         self.label_credits.setText(str(user_credits))
         self.label_credits.setFont(QFont("Arial", 50))
-
-        # Label_Portfolio
-        self.label_portfolio.move(width_unit*8, height_unit*4)
-        self.label_portfolio.setText("Your Portfolio")
-        self.label_portfolio.setFont(QFont("Arial", 30))
 
         # Label_Browse_Holdings
         self.label_browse_holdings.move(width_unit*75, height_unit*5)
@@ -206,9 +205,10 @@ class MainGui(QWidget):
         self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
         self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
         self.widget_hold_graph_portfolio.setGeometry(width_unit*7, height_unit*10, width_unit*86, height_unit*40)
-        self.update_graph("SAP", "1Y", self.graph_for_portfolio)
+        first_holding = self.get_first_holding_from_user(username)
+        self.update_graph(first_holding, "1Y", self.graph_for_portfolio)
 
-    def init_browse_holdings(self, size, size_units):
+    def init_browse_holdings(self, size_units):
         width_unit = size_units["width_unit"]
         height_unit = size_units["height_unit"]
 
@@ -482,6 +482,11 @@ class MainGui(QWidget):
     def update_credits(self, username):
         user_credits = database.get_credits_by_username(username)
         self.label_credits.setText(str(user_credits))
+
+    @staticmethod
+    def get_first_holding_from_user(username):
+        first_holding = database.get_holding_names_from_user(username)[0]
+        return first_holding
 
 
 class DateAxis(AxisItem):
