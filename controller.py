@@ -2,6 +2,8 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from enum import Enum
+
 import hashcode_utils
 import holdings_data_utils
 from view import Register, MainGui
@@ -10,9 +12,7 @@ from model import Model
 
 class Controller:
     def __init__(self):
-        self.hashcode = ''
         self.username = ''
-        self.user_credits = ''
         self.buttons_as_dict = {}
         self._app = QApplication(sys.argv)
         self._model = Model()
@@ -50,13 +50,12 @@ class Controller:
     def register(self, entered_username, password):
         credentials_concatenated = entered_username + ":" + password
         generated_hash = hashcode_utils.create_hash(credentials_concatenated)
-        self.hashcode = generated_hash
         self._model.create_new_user(generated_hash, entered_username)
 
     # Main_Gui Window
     def init_main_gui_widgets(self):
         user_credits = self._model.get_credits_by_username(self.username)
-        self._main_gui.init_portfolio( self.size_units, user_credits)
+        self._main_gui.init_portfolio(self.size_units, user_credits)
         self._main_gui.init_browse_holdings(self.size_units)
         first_holding = self.get_first_holding_from_user()
         self.init_graph(first_holding)
@@ -116,11 +115,10 @@ class Controller:
         self._main_gui.update_graph(graph, holding, prices, date_in_ticks)
 
     def buy_holding(self):
-        number_to_buy, is_buy_holding = self.how_many_holdings("buy")
+        number_to_buy, is_buy_holding = self.how_many_holdings(HoldingAction.BUY)
         if is_buy_holding:
             holding = self._main_gui.label_holding_name.text()
-            holding_price = float(self._main_gui.label_holding_price.text())
-            holding_price = int(round(holding_price))
+            holding_price = holdings_data_utils.get_current_price_of_holding(holding)
             user_credits = self._model.get_credits_by_username(self.username)
             if self._model.user_already_has_holding(self.username, holding):
                 number_of_holdings_user_already_has = self._model.get_amount_of_holdings_user_already_has(self.username,
@@ -133,7 +131,7 @@ class Controller:
                     new_buy_in_price = round(new_buy_in_price, 2)
                     self._model.update_number_of_holdings(self.username, holding, number_of_total_holdings,
                                                           new_buy_in_price)
-                    new_amount_of_credits = user_credits - holding_price * number_to_buy
+                    new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
                     self._model.update_credits_in_database(self.username, new_amount_of_credits)
                     self._main_gui.update_credits(new_amount_of_credits)
                     self._main_gui.show_message_box("Buy", "Bought holding!")
@@ -142,26 +140,32 @@ class Controller:
             else:
                 if user_credits > holding_price * number_to_buy:
                     self._model.create_new_holding(self.username, holding, number_to_buy, holding_price)
-                    new_amount_of_credits = user_credits - holding_price * number_to_buy
+                    new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
                     self._model.update_credits_in_database(self.username, new_amount_of_credits)
+                    self._main_gui.update_credits(new_amount_of_credits)
                     self._main_gui.show_message_box("Buy", "Bought new holding!")
                 else:
                     self._main_gui.show_error('Not enough credits')
 
     def sell_holding(self):
-        number_to_sell, is_sell_holding = self.how_many_holdings("sell")
+        number_to_sell, is_sell_holding = self.how_many_holdings(HoldingAction.SELL)
         if is_sell_holding:
             holding = self.get_holding_of_sender()
             old_user_credits = self._model.get_credits_by_username(self.username)
             old_amount_of_holdings = self._model.get_amount_of_holdings_user_already_has(self.username, holding)
-            current_holding_price = holdings_data_utils.get_current_price_of_holding(holding)
-            new_amount_of_credits = old_user_credits + current_holding_price * number_to_sell
-            new_amount_of_holdings = old_amount_of_holdings - number_to_sell
-            buy_in = self._model.get_buy_in_price(self.username, holding)
+            if old_amount_of_holdings >= number_to_sell:
+                current_holding_price = holdings_data_utils.get_current_price_of_holding(holding)
+                new_amount_of_credits = round(old_user_credits + current_holding_price * number_to_sell)
+                new_amount_of_holdings = old_amount_of_holdings - number_to_sell
+                buy_in = self._model.get_buy_in_price(self.username, holding)
 
-            self._model.update_credits_in_database(self.username, new_amount_of_credits)
-            self._model.update_number_of_holdings(self.username, holding, new_amount_of_holdings, buy_in)
-            self.update_table()
+                self._model.update_credits_in_database(self.username, new_amount_of_credits)
+                self._model.update_number_of_holdings(self.username, holding, new_amount_of_holdings, buy_in)
+                if new_amount_of_holdings == 0:
+                    self._model.remove_holding(self.username, holding)
+                self.update_table()
+            else:
+                self._main_gui.show_error("Not enough holdings")
 
     def browse_holding(self, holding_name):
         if holdings_data_utils.holding_exists(holding_name):
@@ -194,9 +198,9 @@ class Controller:
         self.update_table()
 
     def how_many_holdings(self, action):
-        if action == "buy":
+        if action == HoldingAction.BUY:
             amount_of_holdings, ok_pressed = self._main_gui.ask_buy_holdings()
-        if action == "sell":
+        if action == HoldingAction.SELL:
             amount_of_holdings, ok_pressed = self._main_gui.ask_sell_holdings()
         if ok_pressed:
             if amount_of_holdings == 0:
@@ -266,6 +270,11 @@ class Controller:
         self.init_main_gui_widgets()
         self._register.close()
         self._main_gui.show()
+
+
+class HoldingAction(Enum):
+    SELL = 1
+    BUY = 2
 
 
 if __name__ == "__main__":

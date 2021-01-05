@@ -85,5 +85,3 @@ def get_holding_names_from_user(username):
         holding_names.append(holding["holding"])
     return holding_names
 
-
-

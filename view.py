@@ -306,6 +306,7 @@ class MainGui(QWidget):
         self.label_holding_name.setText("Holding doesn't exist")
         self.label_holding_name.adjustSize()
         self.button_buy_holding.setDisabled(True)
+        self.show_error("Holding doesn't exist")
 
     def get_sender(self):
         sender = self.sender()

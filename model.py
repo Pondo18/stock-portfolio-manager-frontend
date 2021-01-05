@@ -76,9 +76,20 @@ class Model:
             holding_names.append(holding["holding"])
         return holding_names
 
-    # TODO: Abhängig von Statuscode 404 machen
     def user_has_no_holdings(self, username):
         r = requests.get(f"{self.cfg['api_endpoint']}/users/{username}/holdings")
-        holdings = r.json()
-        return not holdings
+        status_code = r.status_code
+        return status_code == 204
 
+    def remove_holding(self, username, holding):
+        r = requests.delete(f"{self.cfg['api_endpoint']}/users/{username}/holdings/{holding}")
+        return r.json()
+
+    def test(self):
+        entry_data = {'username': "username"}
+        r = requests.post(f"{self.cfg['api_endpoint']}/users", json=entry_data)
+        return r.json()
+
+
+model = Model()
+print(model.test())
