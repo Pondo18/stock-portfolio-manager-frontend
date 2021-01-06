@@ -232,8 +232,6 @@ class MainGui(QWidget):
         self.table_show_all_holdings.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
-        self.table_show_all_holdings.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
-
         for i in range(amount_of_holdings):
             self.table_show_all_holdings.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
 

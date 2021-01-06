@@ -269,8 +269,8 @@ class Controller:
     def run_start(self):
         if hashcode_utils.return_hash_if_exists()[1]:
             self.username = self.get_username()
-            self._main_gui.show()
             self.init_main_gui_widgets()
+            self._main_gui.show()
         else:
             self._register.show()
         return self._app.exec_()
