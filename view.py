@@ -227,7 +227,8 @@ class MainGui(QWidget):
         self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
         self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
         self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
-        self.table_show_all_holdings.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(4, QHeaderView.ResizeToContents)
         self.table_show_all_holdings.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
@@ -238,7 +239,7 @@ class MainGui(QWidget):
 
         self.table_show_all_holdings.clicked.connect(self.signal_table_clicked)
 
-    def update_table(self):
+    def clear_table(self):
         self.table_show_all_holdings.clear()
 
     def show_button_in_table(self, button, button_index):
@@ -315,34 +316,43 @@ class MainGui(QWidget):
 
 class DateAxis(AxisItem):
     def tickStrings(self, values, scale, spacing):
-        strns = []
+        strings = []
         rng = max(values) - min(values)
-        if rng < 3600 * 24:
-            string = '%H:%M:%S'
-            label1 = '%b %d -'
-            label2 = ' %b %d, %Y'
-        elif 3600 * 24 <= rng < 3600 * 24 * 30:
-            string = '%d'
-            label1 = '%b - '
-            label2 = '%b, %Y'
-        elif 3600 * 24 * 30 <= rng < 3600 * 24 * 30 * 24:
-            string = '%b'
-            label1 = '%Y -'
-            label2 = ' %Y'
-        elif rng >= 3600 * 24 * 30 * 24:
-            string = '%Y'
-            label1 = ''
-            label2 = ''
+        string, label1, label2 = self.which_period_of_time(rng)
         for x in values:
             try:
-                strns.append(time.strftime(string, time.localtime(x)))
+                strings.append(time.strftime(string, time.localtime(x)))
             except ValueError:
-                strns.append('')
+                strings.append('')
         try:
             label = time.strftime(label1, time.localtime(min(values))) + time.strftime(label2,
                                                                                        time.localtime(max(values)))
         except ValueError:
             label = ''
-        return strns
+        return strings
+
+    @staticmethod
+    def which_period_of_time(rng):
+        if rng < 3600 * 24:
+            string = '%H:%M:%S'
+            label1 = '%b %d -'
+            label2 = ' %b %d, %Y'
+            return string, label1, label2
+        elif 3600 * 24 <= rng < 3600 * 24 * 30:
+            string = '%d'
+            label1 = '%b - '
+            label2 = '%b, %Y'
+            return string, label1, label2
+        elif 3600 * 24 * 30 <= rng < 3600 * 24 * 30 * 24:
+            string = '%b'
+            label1 = '%Y -'
+            label2 = ' %Y'
+            return string, label1, label2
+        elif rng >= 3600 * 24 * 30 * 24:
+            string = '%Y'
+            label1 = ''
+            label2 = ''
+            return string, label1, label2
+
 
 

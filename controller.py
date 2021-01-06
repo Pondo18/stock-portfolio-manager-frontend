@@ -73,7 +73,7 @@ class Controller:
     def update_table(self):
         user_credits = self._model.get_credits_by_username(self.username)
         self._main_gui.update_credits(user_credits)
-        self._main_gui.update_table()
+        self._main_gui.clear_table()
         self.init_table()
         self.show_holdings_in_table()
 
@@ -124,28 +124,34 @@ class Controller:
                 number_of_holdings_user_already_has = self._model.get_amount_of_holdings_user_already_has(self.username,
                                                                                                           holding)
                 if user_credits > holding_price * number_to_buy:
-                    old_buy_in_price = self._model.get_buy_in_price(self.username, holding)
-                    number_of_total_holdings = number_of_holdings_user_already_has + number_to_buy
-                    new_buy_in_price = (old_buy_in_price * number_of_holdings_user_already_has
-                                        + holding_price * number_to_buy) / number_of_total_holdings
-                    new_buy_in_price = round(new_buy_in_price, 2)
-                    self._model.update_number_of_holdings(self.username, holding, number_of_total_holdings,
-                                                          new_buy_in_price)
-                    new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
-                    self._model.update_credits_in_database(self.username, new_amount_of_credits)
-                    self._main_gui.update_credits(new_amount_of_credits)
-                    self._main_gui.show_message_box("Buy", "Bought holding!")
+                    self.buy_old_holding_again(holding, number_of_holdings_user_already_has, number_to_buy, user_credits, holding_price)
                 else:
                     self._main_gui.show_error('Not enough credits')
             else:
                 if user_credits > holding_price * number_to_buy:
-                    self._model.create_new_holding(self.username, holding, number_to_buy, holding_price)
-                    new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
-                    self._model.update_credits_in_database(self.username, new_amount_of_credits)
-                    self._main_gui.update_credits(new_amount_of_credits)
-                    self._main_gui.show_message_box("Buy", "Bought new holding!")
+                    self.buy_new_holding(holding, number_to_buy, holding_price, user_credits)
                 else:
                     self._main_gui.show_error('Not enough credits')
+
+    def buy_old_holding_again(self, holding, number_of_holdings_user_already_has, number_to_buy, user_credits, holding_price):
+        old_buy_in_price = self._model.get_buy_in_price(self.username, holding)
+        number_of_total_holdings = number_of_holdings_user_already_has + number_to_buy
+        new_buy_in_price = (old_buy_in_price * number_of_holdings_user_already_has
+                            + holding_price * number_to_buy) / number_of_total_holdings
+        new_buy_in_price = round(new_buy_in_price, 2)
+        self._model.update_number_of_holdings(self.username, holding, number_of_total_holdings,
+                                              new_buy_in_price)
+        new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
+        self._model.update_credits_in_database(self.username, new_amount_of_credits)
+        self._main_gui.update_credits(new_amount_of_credits)
+        self._main_gui.show_message_box("Buy", "Bought holding!")
+
+    def buy_new_holding(self, holding, number_to_buy, holding_price, user_credits):
+        self._model.create_new_holding(self.username, holding, number_to_buy, holding_price)
+        new_amount_of_credits = round(user_credits - holding_price * number_to_buy)
+        self._model.update_credits_in_database(self.username, new_amount_of_credits)
+        self._main_gui.update_credits(new_amount_of_credits)
+        self._main_gui.show_message_box("Buy", "Bought new holding!")
 
     def sell_holding(self):
         number_to_sell, is_sell_holding = self.how_many_holdings(HoldingAction.SELL)
@@ -154,18 +160,21 @@ class Controller:
             old_user_credits = self._model.get_credits_by_username(self.username)
             old_amount_of_holdings = self._model.get_amount_of_holdings_user_already_has(self.username, holding)
             if old_amount_of_holdings >= number_to_sell:
-                current_holding_price = holdings_data_utils.get_current_price_of_holding(holding)
-                new_amount_of_credits = round(old_user_credits + current_holding_price * number_to_sell)
-                new_amount_of_holdings = old_amount_of_holdings - number_to_sell
-                buy_in = self._model.get_buy_in_price(self.username, holding)
-
-                self._model.update_credits_in_database(self.username, new_amount_of_credits)
-                self._model.update_number_of_holdings(self.username, holding, new_amount_of_holdings, buy_in)
-                if new_amount_of_holdings == 0:
-                    self._model.remove_holding(self.username, holding)
-                self.update_table()
+                self.do_sell_holding(holding, old_user_credits, number_to_sell, old_amount_of_holdings)
             else:
                 self._main_gui.show_error("Not enough holdings")
+
+    def do_sell_holding(self, holding, old_user_credits, number_to_sell, old_amount_of_holdings):
+        current_holding_price = holdings_data_utils.get_current_price_of_holding(holding)
+        new_amount_of_credits = round(old_user_credits + current_holding_price * number_to_sell)
+        new_amount_of_holdings = old_amount_of_holdings - number_to_sell
+        buy_in = self._model.get_buy_in_price(self.username, holding)
+
+        self._model.update_credits_in_database(self.username, new_amount_of_credits)
+        self._model.update_number_of_holdings(self.username, holding, new_amount_of_holdings, buy_in)
+        if new_amount_of_holdings == 0:
+            self._model.remove_holding(self.username, holding)
+        self.update_table()
 
     def browse_holding(self, holding_name):
         if holdings_data_utils.holding_exists(holding_name):

@@ -1,2 +1,4 @@
-#api_endpoint: https://glacial-tundra-54285.herokuapp.com
-api_endpoint: http://localhost:5000
+development:
+  api_endpoint: http://localhost:5000
+production:
+  api_endpoint: https://glacial-tundra-54285.herokuapp.com
