@@ -62,3 +62,7 @@ Hier befinden sich die Hilfsfunktionen für den Hashcode.
 
 Hier befinden sich die Hilfsfunktionen für die Abfragen der Aktiendaten.
 
+### Frontend total lines of Code
+853
+### Backend total lines of Code
+361

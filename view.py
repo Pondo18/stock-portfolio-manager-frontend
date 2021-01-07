@@ -177,6 +177,7 @@ class MainGui(QWidget):
         self.layout_hold_graph_portfolio.addWidget(self.graph_for_portfolio)
         self.widget_hold_graph_portfolio.setLayout(self.layout_hold_graph_portfolio)
         self.widget_hold_graph_portfolio.setGeometry(width_unit*7, height_unit*10, width_unit*86, height_unit*40)
+        self.graph_for_portfolio.setMouseEnabled(x=False, y=False)
 
     def init_browse_holdings(self, size_units):
         width_unit = size_units["width_unit"]
@@ -217,20 +218,21 @@ class MainGui(QWidget):
         self.button_back_to_portfolio.clicked.connect(self.signal_change_to_portfolio)
 
         # Buttons_To_Change_Period
-        self.button_period_max.move(width_unit*45, height_unit*80)
         self.button_period_max.setText("MAX")
+        self.button_period_max.setGeometry(width_unit * 40, height_unit * 82, width_unit * 5, height_unit * 3)
         self.button_period_max.clicked.connect(self.signal_period_max)
-        self.button_period_year.move(width_unit*50, height_unit*80)
         self.button_period_year.setText("YEAR")
+        self.button_period_year.setGeometry(width_unit * 45, height_unit * 82, width_unit * 5, height_unit * 3)
         self.button_period_year.clicked.connect(self.signal_period_year)
-        self.button_period_month.move(width_unit*55, height_unit*80)
         self.button_period_month.setText("MONTH")
+        self.button_period_month.setGeometry(width_unit * 50, height_unit * 82, width_unit * 5, height_unit * 3)
         self.button_period_month.clicked.connect(self.signal_period_month)
 
         # Graph
         self.layout_hold_graph_browse_holdings.addWidget(self.graph_for_browse_holdings)
         self.widget_hold_graph_browse_holdings.setLayout(self.layout_hold_graph_browse_holdings)
         self.widget_hold_graph_browse_holdings.setGeometry(width_unit*7, height_unit*10, width_unit*86, height_unit*60)
+        self.graph_for_browse_holdings.setMouseEnabled(x=False, y=False)
 
     def init_table(self, amount_of_holdings, holding_names):
         self.table_show_all_holdings.setRowCount(amount_of_holdings)

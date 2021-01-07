@@ -90,11 +90,11 @@ class Controller:
     def change_period(self):
         sender = self._main_gui.get_sender()
         holding = self._main_gui.label_holding_name.text()
-        if sender.geometry() == QRect(765, 800, 71, 32):
+        if sender.geometry() == QRect(680, 820, 85, 30):
             period = "max"
-        if sender.geometry() == QRect(850, 800, 76, 32):
+        if sender.geometry() == QRect(765, 820, 85, 30):
             period = "1y"
-        if sender.geometry() == QRect(935, 800, 91, 32):
+        if sender.geometry() == QRect(850, 820, 85, 30):
             period = "1mo"
         self.update_graph(holding, period, self._main_gui.graph_for_browse_holdings)
 
