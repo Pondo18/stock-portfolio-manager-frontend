@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import QApplication
 
 from enum import Enum
 
+import operator
+
 import hashcode_utils
 import holdings_data_utils
 from view import Register, MainGui
@@ -15,6 +17,7 @@ class Controller:
     def __init__(self):
         self.username = ''
         self.buttons_as_dict = {}
+        self.holding_names = []
         self._app = QApplication(sys.argv)
         self._model = Model()
         self.screen = self._app.primaryScreen()
@@ -61,28 +64,31 @@ class Controller:
         user_credits = self._model.get_credits_by_username(self.username)
         self._main_gui.init_portfolio(self.size_units, user_credits)
         self._main_gui.init_browse_holdings(self.size_units)
+        self.table_first_init()
         first_holding = self.get_first_holding_from_user()
         self.init_graph(first_holding)
-        self.table_first_init()
 
     def table_first_init(self):
-        self.init_table()
-        self.show_holdings_in_table()
+        holdings = self._model.get_holdings_from_user(self.username)
+        holdings_data, holding_names = self.get_holdings_data_for_portfolio(holdings)
+        self.init_table(holding_names)
+        self.show_holdings_in_table(holdings_data)
 
-    def init_table(self):
-        holding_names = self._model.get_holding_names_from_user(self.username)
+    def init_table(self, holding_names):
         amount_of_holdings = len(holding_names)
         self._main_gui.init_table(amount_of_holdings, holding_names)
 
     def update_table(self):
+        holdings = self._model.get_holdings_from_user(self.username)
+        holdings_data, holding_names = self.get_holdings_data_for_portfolio(holdings)
         user_credits = self._model.get_credits_by_username(self.username)
         self._main_gui.update_credits(user_credits)
         self._main_gui.clear_table()
-        self.init_table()
-        self.show_holdings_in_table()
+        self.init_table(holding_names)
+        self.show_holdings_in_table(holdings_data)
 
     def clicked_table(self, item):
-        holding_names = self._model.get_holding_names_from_user(self.username)
+        holding_names = self.holding_names
         row = item.row()
         clicked_holding_row = holding_names[row]
         self.update_graph(clicked_holding_row, "1y", self._main_gui.graph_for_portfolio)
@@ -98,30 +104,23 @@ class Controller:
             period = "1mo"
         self.update_graph(holding, period, self._main_gui.graph_for_browse_holdings)
 
-    def show_holdings_in_table(self):
+    def show_holdings_in_table(self, holdings_data):
         holdings = self._model.get_holdings_from_user(self.username)
-        holdings_data = self.get_holdings_data_for_portfolio(holdings)
         amount_of_holdings = len(holdings)
 
-        positions = [(i, j) for i in range(amount_of_holdings) for j in range(4)]
+        positions = [(i, j) for i in range(amount_of_holdings) for j in range(5)]
         for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
-            if position[1] == 0:
-                current_price = data
             if position[1] == 1:
+                current_price = data
+            if position[1] == 2:
                 self.which_color_for_current_price(position[0], data, current_price)
             self._main_gui.show_data_in_table(position[0], position[1], data)
         self.show_buttons_in_table()
 
-    def which_color_for_current_price(self, position1, data, current_price):
-        if current_price > data:
-            return self._main_gui.current_price_cell_green(position1)
-        if current_price < data:
-            return self._main_gui.current_price_cell_red(position1)
-
     def show_buttons_in_table(self):
-        holdings = self._model.get_holding_names_from_user(self.username)
+        holdings = self.holding_names
         buttons_as_dict = self.buttons_to_dict()
         button_index = 0
         for holding in holdings:
@@ -236,6 +235,8 @@ class Controller:
         user_credits = self._model.get_credits_by_username(self.username)
         self._main_gui.change_card_to_portfolio(user_credits)
         self.update_table()
+        first_holding = self.get_first_holding_from_user()
+        self.update_graph(first_holding, "1y", self._main_gui.graph_for_portfolio)
 
     def how_many_holdings(self, action):
         if action == HoldingAction.BUY:
@@ -251,13 +252,13 @@ class Controller:
 
     def get_first_holding_from_user(self):
         if not self._model.user_has_no_holdings(self.username):
-            first_holding = self._model.get_holding_names_from_user(self.username)[0]
+            first_holding = self.holding_names[0]
             return first_holding
         else:
             return "aapl"
 
     def buttons_to_dict(self):
-        holdings = self._model.get_holding_names_from_user(self.username)
+        holdings = self.holding_names
         buttons_from_holdings = {}
         for holding in holdings:
             button_from_holding = self._main_gui.get_button_for_holding(holding)
@@ -270,28 +271,56 @@ class Controller:
         username = self._model.get_username_by_hashcode(hashcode)
         return username
 
+    def which_color_for_current_price(self, position1, data, current_price):
+        if current_price > data:
+            return self._main_gui.current_price_cell_green(position1)
+        if current_price < data:
+            return self._main_gui.current_price_cell_red(position1)
+
     def get_holding_of_sender(self):
         sender = self._main_gui.get_sender()
         holding = list(self.buttons_as_dict.keys())[list(self.buttons_as_dict.values()).index(sender)]
         return holding
 
-    @staticmethod
-    def get_holdings_data_for_portfolio(holdings):
-        data_from_all_holdings = []
-
+    def get_holdings_data_for_portfolio(self, holdings):
+        data_as_two_dimensional_array = []
+        total_values = []
         for holding in holdings:
-            holding_name = holding["holding"]
-            holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
-            holding_price = round(holding_price, 2)
-            holding_price = str(holding_price) + "$"
-            holding_buy_in = str(holding["buyIn"])
-            holding_buy_in = holding_buy_in + "$"
-            holding_number = str(holding["number"])
-            holding_buy_date = str(holding["buyDate"])
-            holding_data = [holding_price, holding_buy_in, holding_number, holding_buy_date]
-            for data in holding_data:
-                data_from_all_holdings.append(data)
-        return data_from_all_holdings
+            holding_data = self.get_data_for_holding(holding)
+            total_values.append(holding_data[1])
+            data_as_two_dimensional_array.append(holding_data)
+        data_as_two_dimensional_array.sort(key=operator.itemgetter(1), reverse=True)
+        total_values.sort(reverse=True)
+        data_from_all_holdings, holding_names = self.flatten_holdings_data(data_as_two_dimensional_array, total_values)
+        self.holding_names = holding_names
+        return data_from_all_holdings, holding_names
+
+    @staticmethod
+    def flatten_holdings_data(data_as_two_dimensional_array, total_values):
+        holding_names = []
+        data_from_all_holdings = []
+        for i in range(len(data_as_two_dimensional_array)):
+            data_as_two_dimensional_array[i][1] = str(total_values[i])
+            holding_names.append(data_as_two_dimensional_array[i][0])
+            for j in range(1, len(data_as_two_dimensional_array[i])):
+                data_from_all_holdings.append(data_as_two_dimensional_array[i][j])
+        return data_from_all_holdings, holding_names
+
+    @staticmethod
+    def get_data_for_holding(holding):
+        holding_name = holding["holding"]
+        holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
+        holding_price = round(holding_price, 2)
+        holding_buy_in = str(holding["buyIn"])
+        holding_buy_in = holding_buy_in + "$"
+        holding_number = holding["number"]
+        holding_buy_date = str(holding["buyDate"])
+        total_value = holding_price * holding_number
+        total_value = round(total_value, 2)
+        holding_price = str(holding_price) + "$"
+        holding_number = str(holding_number)
+        holding_data = [holding_name, total_value, holding_price, holding_buy_in, holding_number, holding_buy_date]
+        return holding_data
 
     @staticmethod
     def date_in_ticks(dates):

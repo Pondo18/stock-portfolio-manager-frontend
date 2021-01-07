@@ -21,6 +21,7 @@ class Register(QWidget):
         self.top = round((size.height() - self.height) / 2)
         self.left = round((size.width() - self.width) / 2)
         self.iconName = "icons/aktien_icon.png"
+        self.holding_names = ''
 
         # Set Window Properties
         self.setWindowIcon(QIcon(self.iconName))
@@ -140,7 +141,6 @@ class MainGui(QWidget):
                                                     axisItems={'bottom': self.date_axis_browse_holdings},
                                                     enableMenu=False, title='Holding Data')
 
-        self.which_holdings_button = 1
         self.holdings_data = ""
 
     def init_portfolio(self, size_units, user_credits):
@@ -236,24 +236,24 @@ class MainGui(QWidget):
 
     def init_table(self, amount_of_holdings, holding_names):
         self.table_show_all_holdings.setRowCount(amount_of_holdings)
-        self.table_show_all_holdings.setColumnCount(5)
+        self.table_show_all_holdings.setColumnCount(6)
         self.table_show_all_holdings.setFont(QFont("Arial", 15))
         self.table_show_all_holdings.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # Set Horizontal Headers
-        self.table_show_all_holdings.setHorizontalHeaderItem(0, QTableWidgetItem("Current price"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(1, QTableWidgetItem("BuyIn price"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("Amount of holdings"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn date"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("Sell Holding"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(0, QTableWidgetItem("Total value"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(1, QTableWidgetItem("Current price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("BuyIn price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("Amount of holdings"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("BuyIn date"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(5, QTableWidgetItem("Sell Holding"))
         self.table_show_all_holdings.horizontalHeader().setResizeMode(QHeaderView.Stretch)
-        self.table_show_all_holdings.horizontalHeader().setResizeMode(4, QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(5, QHeaderView.ResizeToContents)
         self.table_show_all_holdings.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
         for i in range(amount_of_holdings):
             self.table_show_all_holdings.setVerticalHeaderItem(i, QTableWidgetItem(holding_names[i]))
-
         self.table_show_all_holdings.clicked.connect(self.signal_table_clicked)
 
     def clear_table(self):
@@ -262,7 +262,7 @@ class MainGui(QWidget):
     def show_button_in_table(self, button, button_index):
         button.setText("Sell")
         button.clicked.connect(self.signal_sell_holding)
-        self.table_show_all_holdings.setCellWidget(button_index, 4, button)
+        self.table_show_all_holdings.setCellWidget(button_index, 5, button)
 
     def show_data_in_table(self, position1, position2, data):
         self.table_show_all_holdings.setItem(position1, position2, QTableWidgetItem(data))
