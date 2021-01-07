@@ -1,5 +1,6 @@
 import sys
 
+from PyQt5.QtCore import QRect
 from PyQt5.QtWidgets import QApplication
 
 from enum import Enum
@@ -31,6 +32,9 @@ class Controller:
         self._main_gui.signal_change_to_portfolio.connect(self.change_card_to_portfolio)
         self._main_gui.signal_change_to_browse_holdings.connect(self.change_card_to_browse_holdings)
         self._main_gui.signal_browse_new_holding.connect(self.browse_new_holding)
+        self._main_gui.signal_period_max.connect(self.change_period)
+        self._main_gui.signal_period_year.connect(self.change_period)
+        self._main_gui.signal_period_month.connect(self.change_period)
 
     # Register Window
     def do_register(self):
@@ -83,6 +87,17 @@ class Controller:
         clicked_holding_row = holding_names[row]
         self.update_graph(clicked_holding_row, "1y", self._main_gui.graph_for_portfolio)
 
+    def change_period(self):
+        sender = self._main_gui.get_sender()
+        holding = self._main_gui.label_holding_name.text()
+        if sender.geometry() == QRect(765, 800, 71, 32):
+            period = "max"
+        if sender.geometry() == QRect(850, 800, 76, 32):
+            period = "1y"
+        if sender.geometry() == QRect(935, 800, 91, 32):
+            period = "1mo"
+        self.update_graph(holding, period, self._main_gui.graph_for_browse_holdings)
+
     def show_holdings_in_table(self):
         holdings = self._model.get_holdings_from_user(self.username)
         holdings_data = self.get_holdings_data_for_portfolio(holdings)
@@ -92,8 +107,18 @@ class Controller:
         for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
+            if position[1] == 0:
+                current_price = data
+            if position[1] == 1:
+                self.which_color_for_current_price(position[0], data, current_price)
             self._main_gui.show_data_in_table(position[0], position[1], data)
         self.show_buttons_in_table()
+
+    def which_color_for_current_price(self, position1, data, current_price):
+        if current_price > data:
+            return self._main_gui.current_price_cell_green(position1)
+        if current_price < data:
+            return self._main_gui.current_price_cell_red(position1)
 
     def show_buttons_in_table(self):
         holdings = self._model.get_holding_names_from_user(self.username)
@@ -112,7 +137,11 @@ class Controller:
         prices = holding_data.values
         date = holding_data.keys()
         date_in_ticks = self.date_in_ticks(date)
-        self._main_gui.update_graph(graph, holding, prices, date_in_ticks)
+        amount_of_saved_prices = len(prices)
+        if prices[0] > prices[amount_of_saved_prices-1]:
+            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'r')
+        else:
+            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'g')
 
     def buy_holding(self):
         number_to_buy, is_buy_holding = self.how_many_holdings(HoldingAction.BUY)
@@ -124,7 +153,8 @@ class Controller:
                 number_of_holdings_user_already_has = self._model.get_amount_of_holdings_user_already_has(self.username,
                                                                                                           holding)
                 if user_credits > holding_price * number_to_buy:
-                    self.buy_old_holding_again(holding, number_of_holdings_user_already_has, number_to_buy, user_credits, holding_price)
+                    self.buy_old_holding_again(holding, number_of_holdings_user_already_has, number_to_buy,
+                                               user_credits, holding_price)
                 else:
                     self._main_gui.show_error('Not enough credits')
             else:
@@ -133,7 +163,8 @@ class Controller:
                 else:
                     self._main_gui.show_error('Not enough credits')
 
-    def buy_old_holding_again(self, holding, number_of_holdings_user_already_has, number_to_buy, user_credits, holding_price):
+    def buy_old_holding_again(self, holding, number_of_holdings_user_already_has, number_to_buy,
+                              user_credits, holding_price):
         old_buy_in_price = self._model.get_buy_in_price(self.username, holding)
         number_of_total_holdings = number_of_holdings_user_already_has + number_to_buy
         new_buy_in_price = (old_buy_in_price * number_of_holdings_user_already_has

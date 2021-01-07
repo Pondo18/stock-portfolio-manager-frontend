@@ -100,3 +100,4 @@ class Model:
         entry_data = {'username': "username"}
         r = requests.post(f"{self.api_host}/users", json=entry_data)
         return r.json()
+

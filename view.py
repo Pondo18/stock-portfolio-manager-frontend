@@ -1,12 +1,12 @@
 import time
 
-from PyQt5.QtGui import QIcon, QFont, QPixmap
+from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
 from PyQt5.QtWidgets import QWidget, QLabel, QScrollArea, QVBoxLayout, QLineEdit, QPushButton, \
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, QButtonGroup, \
     QStackedLayout, QErrorMessage, QMessageBox
 from PyQt5.QtCore import Qt, pyqtSignal, QModelIndex
 
-from pyqtgraph import PlotWidget, AxisItem
+from pyqtgraph import PlotWidget, AxisItem, mkPen
 
 
 class Register(QWidget):
@@ -73,6 +73,9 @@ class MainGui(QWidget):
     signal_change_to_portfolio = pyqtSignal()
     signal_change_to_browse_holdings = pyqtSignal()
     signal_browse_new_holding = pyqtSignal()
+    signal_period_max = pyqtSignal()
+    signal_period_year = pyqtSignal()
+    signal_period_month = pyqtSignal()
 
     def __init__(self, size):
         super().__init__()
@@ -125,6 +128,9 @@ class MainGui(QWidget):
         self.textbox_browse_new_holding = QLineEdit(self.stack_browse_holdings)
         self.button_buy_holding = QPushButton(self.stack_browse_holdings)
         self.button_back_to_portfolio = QPushButton(self.stack_browse_holdings)
+        self.button_period_max = QPushButton(self.stack_browse_holdings)
+        self.button_period_year = QPushButton(self.stack_browse_holdings)
+        self.button_period_month = QPushButton(self.stack_browse_holdings)
         self.error_message = QErrorMessage(self.stack_browse_holdings)
         # Graph
         self.layout_hold_graph_browse_holdings = QVBoxLayout(self.stack_browse_holdings)
@@ -210,6 +216,17 @@ class MainGui(QWidget):
         self.button_back_to_portfolio.setText("Back to Portfolio")
         self.button_back_to_portfolio.clicked.connect(self.signal_change_to_portfolio)
 
+        # Buttons_To_Change_Period
+        self.button_period_max.move(width_unit*45, height_unit*80)
+        self.button_period_max.setText("MAX")
+        self.button_period_max.clicked.connect(self.signal_period_max)
+        self.button_period_year.move(width_unit*50, height_unit*80)
+        self.button_period_year.setText("YEAR")
+        self.button_period_year.clicked.connect(self.signal_period_year)
+        self.button_period_month.move(width_unit*55, height_unit*80)
+        self.button_period_month.setText("MONTH")
+        self.button_period_month.clicked.connect(self.signal_period_month)
+
         # Graph
         self.layout_hold_graph_browse_holdings.addWidget(self.graph_for_browse_holdings)
         self.widget_hold_graph_browse_holdings.setLayout(self.layout_hold_graph_browse_holdings)
@@ -248,11 +265,17 @@ class MainGui(QWidget):
     def show_data_in_table(self, position1, position2, data):
         self.table_show_all_holdings.setItem(position1, position2, QTableWidgetItem(data))
 
+    def current_price_cell_red(self, position1):
+        self.table_show_all_holdings.item(position1, 0).setBackground(QColor(255, 0, 0))
+
+    def current_price_cell_green(self, position1):
+        self.table_show_all_holdings.item(position1, 0).setBackground(QColor(0, 128, 0))
+
     @staticmethod
-    def update_graph(graph, title, prices, date_in_ticks):
+    def update_graph(graph, title, prices, date_in_ticks, color):
         graph.clear()
         graph.setTitle(title=title)
-        graph.plot(x=date_in_ticks, y=prices)
+        graph.plot(x=date_in_ticks, y=prices, pen=mkPen(color))
 
     def update_credits(self, user_credits):
         self.label_credits.setText(str(user_credits))
@@ -351,6 +374,3 @@ class DateAxis(AxisItem):
             label1 = ''
             label2 = ''
             return string, label1, label2
-
-
-
