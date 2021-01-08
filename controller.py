@@ -1,3 +1,4 @@
+import re
 import sys
 
 from PyQt5.QtCore import QRect
@@ -108,14 +109,12 @@ class Controller:
         holdings = self._model.get_holdings_from_user(self.username)
         amount_of_holdings = len(holdings)
 
-        positions = [(i, j) for i in range(amount_of_holdings) for j in range(5)]
+        positions = [(i, j) for i in range(amount_of_holdings) for j in range(6)]
         for position, data in zip(positions, holdings_data):
             if data == '':
                 continue
             if position[1] == 1:
-                current_price = data
-            if position[1] == 2:
-                self.which_color_for_current_price(position[0], data, current_price)
+                self.which_color_for_current_price(position[0], data)
             self._main_gui.show_data_in_table(position[0], position[1], data)
         self.show_buttons_in_table()
 
@@ -271,11 +270,28 @@ class Controller:
         username = self._model.get_username_by_hashcode(hashcode)
         return username
 
-    def which_color_for_current_price(self, position1, data, current_price):
-        if current_price > data:
-            return self._main_gui.current_price_cell_green(position1)
-        if current_price < data:
-            return self._main_gui.current_price_cell_red(position1)
+    def which_color_for_current_price(self, position1, ratio):
+        ratio_as_string = re.search(r"([0-9\.\-\+]+)", ratio).group()
+        ratio_as_int = re.search(r"([0-9\.]+)", ratio).group()
+        ratio_as_int = float(ratio_as_int)
+        if ratio_as_string[0] == "+":
+            r, g, b = self.which_green_color_for_ratio(ratio_as_int)
+            self._main_gui.set_background_color_for_total_value(position1, r, g, b)
+        if ratio_as_string[0] == "-":
+            r, g, b = self.which_red_color_for_ratio(ratio_as_int)
+            self._main_gui.set_background_color_for_total_value(position1, r, g, b)
+
+    @staticmethod
+    def which_green_color_for_ratio(ratio_int):
+        if ratio_int > 10:
+            return 34, 139, 34
+        return 0, 205, 0
+
+    @staticmethod
+    def which_red_color_for_ratio(ratio_int):
+        if ratio_int > 10:
+            return 205, 0, 0
+        return 255, 0, 0
 
     def get_holding_of_sender(self):
         sender = self._main_gui.get_sender()
@@ -291,8 +307,12 @@ class Controller:
             data_as_two_dimensional_array.append(holding_data)
         data_as_two_dimensional_array.sort(key=operator.itemgetter(1), reverse=True)
         total_values.sort(reverse=True)
+        all_holdings_value = sum(total_values)
+        user_credits = self._model.get_credits_by_username(self.username)
+        account_value = round(all_holdings_value + user_credits)
         data_from_all_holdings, holding_names = self.flatten_holdings_data(data_as_two_dimensional_array, total_values)
         self.holding_names = holding_names
+        self._main_gui.update_account_value(account_value)
         return data_from_all_holdings, holding_names
 
     @staticmethod
@@ -300,27 +320,45 @@ class Controller:
         holding_names = []
         data_from_all_holdings = []
         for i in range(len(data_as_two_dimensional_array)):
-            data_as_two_dimensional_array[i][1] = str(total_values[i])
+            total_value_as_string = str(total_values[i])
+            data_as_two_dimensional_array[i][1] = f"{total_value_as_string}$"
             holding_names.append(data_as_two_dimensional_array[i][0])
             for j in range(1, len(data_as_two_dimensional_array[i])):
                 data_from_all_holdings.append(data_as_two_dimensional_array[i][j])
         return data_from_all_holdings, holding_names
 
-    @staticmethod
-    def get_data_for_holding(holding):
+    def get_data_for_holding(self, holding):
         holding_name = holding["holding"]
         holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
         holding_price = round(holding_price, 2)
-        holding_buy_in = str(holding["buyIn"])
-        holding_buy_in = holding_buy_in + "$"
         holding_number = holding["number"]
         holding_buy_date = str(holding["buyDate"])
         total_value = holding_price * holding_number
         total_value = round(total_value, 2)
+        holding_buy_in = holding["buyIn"]
+        ratio = self.get_ratio(holding_price, holding_buy_in)
+        holding_buy_in = str(holding_buy_in)
+        holding_buy_in = holding_buy_in + "$"
         holding_price = str(holding_price) + "$"
         holding_number = str(holding_number)
-        holding_data = [holding_name, total_value, holding_price, holding_buy_in, holding_number, holding_buy_date]
+        holding_data = [holding_name, total_value, ratio, holding_price,
+                        holding_buy_in, holding_number, holding_buy_date]
         return holding_data
+
+    @staticmethod
+    def get_ratio(holding_price, holding_buy_in_price):
+        if holding_price > holding_buy_in_price:
+            ratio = round(holding_price/holding_buy_in_price-1, 4)
+            ratio_as_percentage = "{:.2%}".format(ratio)
+            ratio_as_percentage = "+"+ratio_as_percentage
+        if holding_price < holding_buy_in_price:
+            ratio = round(abs(holding_price/holding_buy_in_price-1), 4)
+            ratio_as_percentage = "{:.2%}".format(ratio)
+            ratio_as_percentage = "-"+ratio_as_percentage
+        if holding_price == holding_buy_in_price:
+            ratio_as_percentage = "0%"
+        print(ratio_as_percentage)
+        return ratio_as_percentage
 
     @staticmethod
     def date_in_ticks(dates):

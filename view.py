@@ -104,6 +104,8 @@ class MainGui(QWidget):
         # Portfolio_page
         self.label_credits = QLabel(self.stack_portfolio)
         self.label_label_credits = QLabel(self.stack_portfolio)
+        self.label_account_value = QLabel(self.stack_portfolio)
+        self.label_label_account_value = QLabel(self.stack_portfolio)
         self.label_browse_holdings = QLabel(self.stack_portfolio)
         self.textbox_browse_holdings = QLineEdit(self.stack_portfolio)
         # Table
@@ -148,14 +150,23 @@ class MainGui(QWidget):
         height_unit = size_units["height_unit"]
 
         # Label_Credits
-        self.label_label_credits.move(width_unit*8, height_unit*3)
+        self.label_label_credits.move(width_unit*8, height_unit*4)
         self.label_label_credits.setText("Credits:")
-        self.label_label_credits.setFont(QFont("Arial", 50))
+        self.label_label_credits.setFont(QFont("Arial", 30))
         self.label_label_credits.adjustSize()
-        self.label_credits.move(width_unit*20, height_unit*3)
+        self.label_credits.move(width_unit*14.5, height_unit*4)
         self.label_credits.setText(str(user_credits))
-        self.label_credits.setFont(QFont("Arial", 50))
+        self.label_credits.setFont(QFont("Arial", 30))
         self.label_credits.adjustSize()
+
+        # Label_Account_Value
+        self.label_label_account_value.move(width_unit*30, height_unit*4)
+        self.label_label_account_value.setText("Account value:")
+        self.label_label_account_value.setFont(QFont("Arial", 30))
+        self.label_label_account_value.adjustSize()
+        self.label_account_value.move(width_unit*42, height_unit*4)
+        self.label_account_value.setText("")
+        self.label_account_value.setFont(QFont("Arial", 30))
 
         # Label_Browse_Holdings
         self.label_browse_holdings.move(width_unit*75, height_unit*5)
@@ -236,19 +247,21 @@ class MainGui(QWidget):
 
     def init_table(self, amount_of_holdings, holding_names):
         self.table_show_all_holdings.setRowCount(amount_of_holdings)
-        self.table_show_all_holdings.setColumnCount(6)
+        self.table_show_all_holdings.setColumnCount(7)
         self.table_show_all_holdings.setFont(QFont("Arial", 15))
         self.table_show_all_holdings.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # Set Horizontal Headers
         self.table_show_all_holdings.setHorizontalHeaderItem(0, QTableWidgetItem("Total value"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(1, QTableWidgetItem("Current price"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("BuyIn price"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("Amount of holdings"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("BuyIn date"))
-        self.table_show_all_holdings.setHorizontalHeaderItem(5, QTableWidgetItem("Sell Holding"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(1, QTableWidgetItem("Ratio %"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(2, QTableWidgetItem("Current price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(3, QTableWidgetItem("BuyIn price"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(4, QTableWidgetItem("Amount of holdings"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(5, QTableWidgetItem("BuyIn date"))
+        self.table_show_all_holdings.setHorizontalHeaderItem(6, QTableWidgetItem("Sell Holding"))
         self.table_show_all_holdings.horizontalHeader().setResizeMode(QHeaderView.Stretch)
-        self.table_show_all_holdings.horizontalHeader().setResizeMode(5, QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(1, QHeaderView.ResizeToContents)
+        self.table_show_all_holdings.horizontalHeader().setResizeMode(6, QHeaderView.ResizeToContents)
         self.table_show_all_holdings.horizontalHeader().setFont(QFont("Arial", 18))
 
         # Set Vertical Headers
@@ -262,16 +275,13 @@ class MainGui(QWidget):
     def show_button_in_table(self, button, button_index):
         button.setText("Sell")
         button.clicked.connect(self.signal_sell_holding)
-        self.table_show_all_holdings.setCellWidget(button_index, 5, button)
+        self.table_show_all_holdings.setCellWidget(button_index, 6, button)
 
     def show_data_in_table(self, position1, position2, data):
         self.table_show_all_holdings.setItem(position1, position2, QTableWidgetItem(data))
 
-    def current_price_cell_red(self, position1):
-        self.table_show_all_holdings.item(position1, 0).setBackground(QColor(255, 0, 0))
-
-    def current_price_cell_green(self, position1):
-        self.table_show_all_holdings.item(position1, 0).setBackground(QColor(0, 128, 0))
+    def set_background_color_for_total_value(self, position1, r, g, b):
+        self.table_show_all_holdings.item(position1, 0).setBackground(QColor(r, g, b))
 
     @staticmethod
     def update_graph(graph, title, prices, date_in_ticks, color):
@@ -284,6 +294,10 @@ class MainGui(QWidget):
         self.label_credits.adjustSize()
         self.label_credits_browse_holding.setText(str(user_credits))
         self.label_credits_browse_holding.adjustSize()
+
+    def update_account_value(self, account_value):
+        self.label_account_value.setText(str(account_value))
+        self.label_account_value.adjustSize()
 
     def browse_holding(self, holding_name, holding_price):
         self.label_holding_name.setText(holding_name)
