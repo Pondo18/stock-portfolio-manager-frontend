@@ -92,7 +92,33 @@ class Controller:
         holding_names = self.holding_names
         row = item.row()
         clicked_holding_row = holding_names[row]
-        self.update_graph(clicked_holding_row, "1y", self._main_gui.graph_for_portfolio)
+        holding_data = holdings_data_utils.get_holding_price_for_period(clicked_holding_row, "1y")
+        prices = holding_data.values
+        date = holding_data.keys()
+        self.update_graph(clicked_holding_row, prices, date, self._main_gui.graph_for_portfolio)
+
+    def init_graph(self, first_holding):
+        holding_data = holdings_data_utils.get_holding_price_for_period(first_holding, "1y")
+        prices = holding_data.values
+        date = holding_data.keys()
+        self.update_graph(first_holding, prices, date, self._main_gui.graph_for_portfolio)
+
+    def update_graph(self, holding, prices, dates, graph):
+        date_in_ticks = self.date_in_ticks(dates)
+        amount_of_saved_prices = len(prices)
+        if prices[0] > prices[amount_of_saved_prices-1]:
+            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'r')
+        else:
+            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'g')
+
+    def update_ratio_in_period(self, price_start_of_period, price_end_of_period):
+        ratio = self.get_ratio(price_end_of_period, price_start_of_period)
+        self._main_gui.update_ratio(ratio)
+        if ratio[0] == "+":
+            self._main_gui.set_background_color_for_label_ratio("green")
+        if ratio[0] == "-":
+            self._main_gui.set_background_color_for_label_ratio("red")
+        self._main_gui.update_start_price(price_start_of_period)
 
     def change_period(self):
         sender = self._main_gui.get_sender()
@@ -103,7 +129,11 @@ class Controller:
             period = "1y"
         if sender.geometry() == QRect(850, 820, 85, 30):
             period = "1mo"
-        self.update_graph(holding, period, self._main_gui.graph_for_browse_holdings)
+        holding_data = holdings_data_utils.get_holding_price_for_period(holding, period)
+        prices = holding_data.values
+        date = holding_data.keys()
+        self.update_graph(holding, prices, date, self._main_gui.graph_for_browse_holdings)
+        self.update_ratio_in_period(prices[0], prices[-1])
 
     def show_holdings_in_table(self, holdings_data):
         holdings = self._model.get_holdings_from_user(self.username)
@@ -126,20 +156,6 @@ class Controller:
             button = buttons_as_dict[holding]
             self._main_gui.show_button_in_table(button, button_index)
             button_index += 1
-
-    def init_graph(self, first_holding):
-        self.update_graph(first_holding, "1Y", self._main_gui.graph_for_portfolio)
-
-    def update_graph(self, holding, period, graph):
-        holding_data = holdings_data_utils.get_holding_price_for_period(holding, period)
-        prices = holding_data.values
-        date = holding_data.keys()
-        date_in_ticks = self.date_in_ticks(date)
-        amount_of_saved_prices = len(prices)
-        if prices[0] > prices[amount_of_saved_prices-1]:
-            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'r')
-        else:
-            self._main_gui.update_graph(graph, holding, prices, date_in_ticks, 'g')
 
     def buy_holding(self):
         number_to_buy, is_buy_holding = self.how_many_holdings(HoldingAction.BUY)
@@ -219,14 +235,22 @@ class Controller:
         if holdings_data_utils.holding_exists(holding_name):
             holding_price = holdings_data_utils.get_current_price_of_holding(holding_name)
             self._main_gui.browse_new_holding(holding_name, holding_price)
-            self.update_graph(holding_name, "1y", self._main_gui.graph_for_browse_holdings)
+            holding_data = holdings_data_utils.get_holding_price_for_period(holding_name, "1y")
+            prices = holding_data.values
+            date = holding_data.keys()
+            self.update_graph(holding_name, prices, date, self._main_gui.graph_for_browse_holdings)
+            self.update_ratio_in_period(prices[0], prices[-1])
         else:
             self._main_gui.holding_doesnt_exist()
 
     def change_card_to_browse_holdings(self):
         holding_name = self._main_gui.textbox_browse_holdings.text()
         if self.browse_holding(holding_name):
-            self.update_graph(holding_name, "1y", self._main_gui.graph_for_browse_holdings)
+            holding_data = holdings_data_utils.get_holding_price_for_period(holding_name, "1y")
+            prices = holding_data.values
+            date = holding_data.keys()
+            self.update_graph(holding_name, prices, date, self._main_gui.graph_for_browse_holdings)
+            self.update_ratio_in_period(prices[0], prices[-1])
         user_credits = self._model.get_credits_by_username(self.username)
         self._main_gui.change_card_to_browse_holdings(user_credits)
 
@@ -235,7 +259,10 @@ class Controller:
         self._main_gui.change_card_to_portfolio(user_credits)
         self.update_table()
         first_holding = self.get_first_holding_from_user()
-        self.update_graph(first_holding, "1y", self._main_gui.graph_for_portfolio)
+        holding_data = holdings_data_utils.get_holding_price_for_period(first_holding, "1y")
+        prices = holding_data.values
+        date = holding_data.keys()
+        self.update_graph(first_holding, prices, date, self._main_gui.graph_for_portfolio)
 
     def how_many_holdings(self, action):
         if action == HoldingAction.BUY:
@@ -250,11 +277,11 @@ class Controller:
             return 0, ok_pressed
 
     def get_first_holding_from_user(self):
-        if not self._model.user_has_no_holdings(self.username):
+        if len(self.holding_names) > 0:
             first_holding = self.holding_names[0]
             return first_holding
         else:
-            return "aapl"
+            return 'aapl'
 
     def buttons_to_dict(self):
         holdings = self.holding_names
@@ -275,20 +302,20 @@ class Controller:
         ratio_as_int = re.search(r"([0-9\.]+)", ratio).group()
         ratio_as_int = float(ratio_as_int)
         if ratio_as_string[0] == "+":
-            r, g, b = self.which_green_color_for_ratio(ratio_as_int)
+            r, g, b = self.which_green_color_in_rgb_for_ratio(ratio_as_int)
             self._main_gui.set_background_color_for_total_value(position1, r, g, b)
         if ratio_as_string[0] == "-":
-            r, g, b = self.which_red_color_for_ratio(ratio_as_int)
+            r, g, b = self.which_red_color_in_rgb_for_ratio(ratio_as_int)
             self._main_gui.set_background_color_for_total_value(position1, r, g, b)
 
     @staticmethod
-    def which_green_color_for_ratio(ratio_int):
+    def which_green_color_in_rgb_for_ratio(ratio_int):
         if ratio_int > 10:
             return 34, 139, 34
-        return 0, 205, 0
+        return 0, 238, 0
 
     @staticmethod
-    def which_red_color_for_ratio(ratio_int):
+    def which_red_color_in_rgb_for_ratio(ratio_int):
         if ratio_int > 10:
             return 205, 0, 0
         return 255, 0, 0
@@ -346,18 +373,17 @@ class Controller:
         return holding_data
 
     @staticmethod
-    def get_ratio(holding_price, holding_buy_in_price):
-        if holding_price > holding_buy_in_price:
-            ratio = round(holding_price/holding_buy_in_price-1, 4)
+    def get_ratio(end_price, start_price):
+        if end_price > start_price:
+            ratio = round(end_price / start_price - 1, 4)
             ratio_as_percentage = "{:.2%}".format(ratio)
             ratio_as_percentage = "+"+ratio_as_percentage
-        if holding_price < holding_buy_in_price:
-            ratio = round(abs(holding_price/holding_buy_in_price-1), 4)
+        if end_price < start_price:
+            ratio = round(abs(end_price / start_price - 1), 4)
             ratio_as_percentage = "{:.2%}".format(ratio)
             ratio_as_percentage = "-"+ratio_as_percentage
-        if holding_price == holding_buy_in_price:
+        if end_price == start_price:
             ratio_as_percentage = "0%"
-        print(ratio_as_percentage)
         return ratio_as_percentage
 
     @staticmethod

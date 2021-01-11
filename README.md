@@ -108,3 +108,10 @@ Dies geschieht über die Library yfinance.
 
 ### Frontend total lines of Code
 870
+
+## Links 
+GUI: [Qt5 Doku](https://doc.qt.io/qtforpython/) - [Pyqtgraph Doku](https://pyqtgraph.readthedocs.io/en/latest/)
+
+Requests: [Requests Doku](https://requests.readthedocs.io/de/latest/)
+
+

@@ -7,7 +7,6 @@ import yaml
 class Model:
     def __init__(self):
 
-        # export ENVIRON=production/development in Commando Zeile
         environment = os.environ.get('ENVIRON', 'development')
         with open("config.yaml", "r") as yamlfile:
             self.cfg = yaml.load(yamlfile, Loader=yaml.FullLoader)
