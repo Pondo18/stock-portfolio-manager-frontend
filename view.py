@@ -128,6 +128,9 @@ class MainGui(QWidget):
         self.label_browse_new_holding = QLabel(self.stack_browse_holdings)
         self.label_credits_browse_holding = QLabel(self.stack_browse_holdings)
         self.label_label_credits_browse_holding = QLabel(self.stack_browse_holdings)
+        self.label_ratio_in_period = QLabel(self.stack_browse_holdings)
+        self.label_label_price_start_of_period = QLabel(self.stack_browse_holdings)
+        self.label_price_start_of_period = QLabel(self.stack_browse_holdings)
         self.textbox_browse_new_holding = QLineEdit(self.stack_browse_holdings)
         self.button_buy_holding = QPushButton(self.stack_browse_holdings)
         self.button_back_to_portfolio = QPushButton(self.stack_browse_holdings)
@@ -150,23 +153,23 @@ class MainGui(QWidget):
         height_unit = size_units["height_unit"]
 
         # Label_Credits
-        self.label_label_credits.move(width_unit*8, height_unit*4)
+        self.label_label_credits.move(width_unit*8, height_unit*2)
         self.label_label_credits.setText("Credits:")
         self.label_label_credits.setFont(QFont("Arial", 30))
         self.label_label_credits.adjustSize()
-        self.label_credits.move(width_unit*14.5, height_unit*4)
+        self.label_credits.move(width_unit*14.5, height_unit*2)
         self.label_credits.setText(str(user_credits))
         self.label_credits.setFont(QFont("Arial", 30))
         self.label_credits.adjustSize()
 
         # Label_Account_Value
-        self.label_label_account_value.move(width_unit*30, height_unit*4)
+        self.label_label_account_value.move(width_unit*8, height_unit*7)
         self.label_label_account_value.setText("Account value:")
-        self.label_label_account_value.setFont(QFont("Arial", 30))
+        self.label_label_account_value.setFont(QFont("Arial", 24))
         self.label_label_account_value.adjustSize()
-        self.label_account_value.move(width_unit*42, height_unit*4)
+        self.label_account_value.move(width_unit*17.5, height_unit*7)
         self.label_account_value.setText("")
-        self.label_account_value.setFont(QFont("Arial", 30))
+        self.label_account_value.setFont(QFont("Arial", 24))
 
         # Label_Browse_Holdings
         self.label_browse_holdings.move(width_unit*75, height_unit*5)
@@ -204,14 +207,22 @@ class MainGui(QWidget):
         self.label_label_holding_price.setText("Price:")
         self.label_holding_price.move(width_unit*12, height_unit*83)
 
+        # Label_Price_Start of Period
+        self.label_label_price_start_of_period.move(width_unit * 7, height_unit * 86)
+        self.label_label_price_start_of_period.setText("Start Price")
+        self.label_price_start_of_period.move(width_unit * 12, height_unit * 86)
+
+        # Label_Ratio_In_period
+        self.label_ratio_in_period.move(width_unit*7, height_unit*89)
+
         # Label_Browse_New_Holding
         self.label_browse_new_holding.move(width_unit*75, height_unit*5)
         self.label_browse_new_holding.setText("Browse holdings:")
 
         # Label_Credits
-        self.label_label_credits_browse_holding.move(width_unit*80, height_unit*80)
+        self.label_label_credits_browse_holding.move(width_unit*81, height_unit*80)
         self.label_label_credits_browse_holding.setText('Credits:')
-        self.label_credits_browse_holding.move(width_unit*83, height_unit*80)
+        self.label_credits_browse_holding.move(width_unit*84, height_unit*80)
 
         # TextBox_Browse_New_Holding
         self.textbox_browse_new_holding.move(width_unit*82, height_unit*5)
@@ -219,7 +230,7 @@ class MainGui(QWidget):
         self.textbox_browse_new_holding.returnPressed.connect(self.signal_browse_new_holding)
 
         # Button_Buy_holding
-        self.button_buy_holding.move(width_unit*80, height_unit*83)
+        self.button_buy_holding.move(width_unit*80.5, height_unit*83)
         self.button_buy_holding.setText("Buy Holding")
         self.button_buy_holding.clicked.connect(self.signal_buy_holding)
 
@@ -283,6 +294,9 @@ class MainGui(QWidget):
     def set_background_color_for_total_value(self, position1, r, g, b):
         self.table_show_all_holdings.item(position1, 0).setBackground(QColor(r, g, b))
 
+    def set_background_color_for_label_ratio(self, color):
+        self.label_ratio_in_period.setStyleSheet(f"background-color: {color}")
+
     @staticmethod
     def update_graph(graph, title, prices, date_in_ticks, color):
         graph.clear()
@@ -295,6 +309,15 @@ class MainGui(QWidget):
         self.label_credits_browse_holding.setText(str(user_credits))
         self.label_credits_browse_holding.adjustSize()
 
+    def update_ratio(self, ratio):
+        self.label_ratio_in_period.setText(ratio)
+        self.label_ratio_in_period.adjustSize()
+
+    def update_start_price(self, start_price):
+        start_price = str(round(start_price, 2)) + "$"
+        self.label_price_start_of_period.setText(start_price)
+        self.label_price_start_of_period.adjustSize()
+
     def update_account_value(self, account_value):
         self.label_account_value.setText(str(account_value))
         self.label_account_value.adjustSize()
@@ -302,7 +325,7 @@ class MainGui(QWidget):
     def browse_holding(self, holding_name, holding_price):
         self.label_holding_name.setText(holding_name)
         self.label_holding_name.adjustSize()
-        self.label_holding_price.setText(str(holding_price))
+        self.label_holding_price.setText(str(holding_price)+ "$")
         self.label_holding_price.adjustSize()
 
     def browse_new_holding(self, holding_name, holding_price):
