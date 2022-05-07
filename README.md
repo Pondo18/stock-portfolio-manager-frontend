@@ -15,7 +15,7 @@ Therefore, it uses play money, so the user can play and test around.
 pip install -m requirements.txt
 ~~~~
 
-For security reasons the communication with the Database is capsuled into an extra Rest-API ([Repository](https://github.com/Pondo18/stock-portfolio-manager-backend))
+For security reasons the communication with the Database is capsuled into an extra Backend ([Repository](https://github.com/Pondo18/stock-portfolio-manager-backend)). For deployment please follow in the instructions provided in the Backend Repository.
 
 ![Portfolio](./doc/portfolio_page.png)
 
