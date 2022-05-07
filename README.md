@@ -1,47 +1,33 @@
 # Portfolio Manager
 
-Mithilfe von Spielgeld lassen sich Aktien kaufen,
-verwalten und schließlich wieder verkaufen.
-Alle Aktien lassen sich außerdem darstellen.
+## Motivation and Goal
+
+The application should provide the user a GUI, where he can buy, hold, and sell stocks, when logged in.
+Therefore, it uses play money, so the user can play and test around.
 
 ## Installation
 
-Vorausgesetzt ist eine aktuelle Python 3 Version. 
-Alle benötigten Librarys können wie folgt installiert werden:
+- Python 3 installed
+
+### Dependencies
+
 ~~~~bash
 pip install -m requirements.txt
 ~~~~
 
-### Dependencys
-Bei dem hier vorliegenden Repository handelt es sich um das Frontend des Programmes. 
-Als Backend läuft eine Rest-API auf einem Heroku Server. Dieser kommuniziert mit einer MySQL Datenbank.
-
-## Bedienung
-
-Wird das Programm erstmalig geöffnet, erscheint eine Registerkarte. 
-Hier muss sich der Nutzer mit einem Username sowie Passwort registrieren. Die Eingabe kann mithilfe der Enter Taste bestätigt werden.
-Die Login-Daten haben später für den Nutzer keine weitere Bedeutung.
-
-Nach der Registrierung öffnet sich nun das Hauptfenster.
-Hier befindet sich eine Tabelle mit allen Aktien des Nutzers, sowie einem Graph, welcher eine ausgewählte Aktie anzeigt.
-Die dargestellte Aktie kann durch Anklicken einer Aktie in der Tabelle geändert werden.
-Mithilfe des „Sell“-Knopfes öffnet sich ein Frage-Dialog. Hier kann die Anzahl der zu verkaufenden Aktien gewählt und anschließend bestätigt werden.
-
-In der oberen rechten Ecke befindet sich ein Textfeld. Durch Eingabe und bestätigen mittels der Enter-Taste, wird nach einer neuen Aktie gesucht.
+For security reasons the communication with the Database is capsuled into an extra Rest-API ([Repository](https://github.com/Pondo18/stock-portfolio-manager-backend))
 
 ![Portfolio](./doc/portfolio_page.png)
 
-Daraufhin wird der Nutzer zu einer detaillierteren Ansicht der Aktie weitergeleitet. 
-Diese kann nun über den „Buy“-Knopf gekauft werden, wobei ebenfalls zuerst die Anzahl ausgewählt werden muss.
 
-Mithilfe der „Back to Portfolio“-Taste gelangt der Nutzer zurück zu seinem Portfolio.
+## Implementation
 
-## Aufgabe der Python Files
+The application follows the MVC-Model.
 
-## `controller.py`
+### `controller.py`
 
-Der Controller steuert das gesamte Programm und beinhaltet die Programmlogik.
-Mithilfe von PyQt Signals bekommt er ausgelöste Events von der View mit.
+The controller controls the entire program and contains the program logic.
+With the help of PyQt Signals, he gets triggered events from the view.
 ~~~~Python
     def init_me(self):
         self._register.enter_pressed.connect(self.do_register)
@@ -57,29 +43,29 @@ Mithilfe von PyQt Signals bekommt er ausgelöste Events von der View mit.
 ~~~~
 
 
-## `view.py`
+### `view.py`
 
-Die View ist für die Darstellung der Daten zuständig.
-Sie wurde mithilfe von PyQt5 und pyqtgraph erstellt.
-Wie für PyQt üblich ist sie ebenfalls Objektorientiert programmiert.
+The view is responsible for displaying the data.
+It was created using PyQt5 and pyqtgraph.
+As usual for PyQt, it is also programmed in an object-oriented manner.
 ~~~~Python
 def __init__(self, size):
 ~~~~
-Im Konstruktor werden zuerst alle Objektvariablen und Widgets für die Darstellung erstellt.
-Anpassungen zu diesen finden anschließlich in den zugehörigen inits statt: 
+In the constructor, all object variables and widgets for the presentation are first created.
+Adjustments to these then take place in the associated inits:
 ~~~~Python
 init_portfolio
 init_browse_holdings
 init_table
 ~~~~
-Mithilfe von PyQt Signals und Events leitet sie Nutzereingaben an den Controller weiter, welcher diese anschließend verarbeitet
+With the help of PyQt signals and events, it forwards user input to the controller, which then processes it.
 ~~~~Python
 enter_pressed = pyqtSignal()
 self.textbox_password.returnPressed.connect(self.enter_pressed)
 ~~~~
-## `model.py`
+### `model.py`
 
-Das Model beinhaltet die Funktionen für die Datenbankabfragen.
+The model holds the functionality for querying data from the Rest-API
 ~~~~Python
 environment = os.environ.get('ENVIRON', 'development')
 with open("config.yaml", "r") as yamlfile:
@@ -87,31 +73,26 @@ with open("config.yaml", "r") as yamlfile:
 
 self.api_host = self.cfg[environment]['api_endpoint']
 ~~~~
-Aus der config.yaml Datei wird der zugehörige api_host geladen. Dieser lässt sich wie folgt, zwischen Entwicklung auf dem Server und lokaler Entwicklung wächseln: 
+The associated api_host is loaded from the config.yaml file. This can be switched between development on the server and local development as follows:
 ~~~~Bash
 export ENVIRON=production
 ~~~~
-oder
+or
 ~~~~Bash
 export ENVIRON=development
 ~~~~
-## `hashcode_utils.py`
+### `hashcode_utils.py`
 
-Hier befinden sich die Hilfsfunktionen für den Hashcode. 
-Der Hashcode wird in der `token.txt` Datei abgespeichert. 
+Here all of the hashcode functionality is located
+When logged in the hashcode gets saved into the `token.txt`.
 
-## `holdings_data_utils.py`
+### `holdings_data_utils.py`
 
-Hier befinden sich die Hilfsfunktionen für die Abfragen der Aktiendaten.
-Die Daten werden wie in `model.py` von einer Rest-API abgefragt. 
-Dies geschieht über die Library yfinance.
-
-### Frontend total lines of Code
-870
-
-## Links 
-GUI: [Qt5 Doku](https://doc.qt.io/qtforpython/) - [Pyqtgraph Doku](https://pyqtgraph.readthedocs.io/en/latest/)
-
-Requests: [Requests Doku](https://requests.readthedocs.io/de/latest/)
+This file is necessary for querying the stock data. Therefore, it uses the yfinance library.
 
 
+## Credits
+
+### Used sources 
+
+- [yfinance-api](https://pypi.org/project/yfinance/)
