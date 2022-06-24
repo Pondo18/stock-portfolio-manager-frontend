@@ -96,3 +96,6 @@ This file is necessary for querying the stock data. Therefore, it uses the yfina
 ### Used sources 
 
 - [yfinance-api](https://pypi.org/project/yfinance/)
+
+### Author 
+- [Moritz Moser](https://github.com/Pondo18)
